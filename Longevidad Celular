@@ -1,0 +1,1771 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decodificando la Longevidad – Marco científico interactivo de 7 Pilares</title>
+    <meta name="description" content="Explora un protocolo celular basado en evidencia: puntuaciones moleculares, tablas filtrables, protocolos pre-diseñados y dosis de referencia.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- React & Babel -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        /* Dark Theme (Default) */
+        html.dark body {
+            background-color: #0f172a; /* slate-900 */
+            color: #cbd5e1; /* slate-300 */
+        }
+        
+        /* Light Theme */
+        html.light body {
+            background-color: #f1f5f9; /* slate-100 */
+            color: #334155; /* slate-700 */
+        }
+
+        .table-scrollbar::-webkit-scrollbar { height: 8px; }
+        .table-scrollbar::-webkit-scrollbar-track { background: var(--scrollbar-track); }
+        .table-scrollbar::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 4px; }
+        .table-scrollbar::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
+
+        html.dark {
+            --scrollbar-track: #1e293b;
+            --scrollbar-thumb: #475569;
+            --scrollbar-thumb-hover: #64748b;
+        }
+        html.light {
+            --scrollbar-track: #e2e8f0;
+            --scrollbar-thumb: #94a3b8;
+            --scrollbar-thumb-hover: #64748b;
+        }
+
+        .score-3 { background-color: #10b981; color: white; } /* Emerald-500 */
+        .score-2 { background-color: #3b82f6; color: white; } /* Blue-500 */
+        .score-1 { background-color: #8b5cf6; color: white; } /* Violet-500 */
+        .score-0 { background-color: #64748b; color: white; } /* Slate-500 */
+        html.light .score-0 { background-color: #cbd5e1; color: #475569; } /* Slate-300 */
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #3b82f6; /* blue-500 */
+            cursor: pointer;
+            border-radius: 50%;
+            border: 2px solid white;
+            margin-top: -8px;
+        }
+
+        html.dark input[type="range"]::-webkit-slider-thumb {
+            background: #60a5fa; /* blue-400 */
+             border: 2px solid #1e293b; /* slate-800 */
+        }
+        
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 4px;
+            border-radius: 2px;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useMemo, useEffect, Fragment } = React;
+
+        // --- ICONOS (LUCIDE-REACT SVGs) ---
+        const DnaIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4.65 20.35c-1-1-1-2.65 0-3.65l11-11c1-1 2.65-1 3.65 0 1 1 1 2.65 0 3.65l-11 11c-1 1-2.65 1-3.65 0Z"/><path d="m16 7 1-5-5 1"/><path d="m8 17-1 5 5-1"/><path d="m7 16 5.3-5.3"/><path d="m12.7 8.7 5.3-5.3"/></svg>;
+        const ZapIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>;
+        const GitBranchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="6" x2="6" y1="3" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>;
+        const RecycleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M7 19H4.815a1.83 1.83 0 0 1-1.57-.881 1.785 1.785 0 0 1-.004-1.784L7.19 9.88"/><path d="M11 19h8.204a1.83 1.83 0 0 0 1.557-.886 1.784 1.784 0 0 0 .004-1.783l-3.95-6.445"/><path d="m13.5 9.5 4-6.5"/><path d="M11 19H7"/><path d="M7 19v-5.17a1.94 1.94 0 0 0-.54-1.38L3 9.5"/><path d="M13.5 9.5H11v9.5h2.5"/><path d="M13.5 9.5 17 3"/></svg>;
+        const ShieldIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
+        const PackageIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16.5 9.4 7.55 4.24"/><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" x2="12" y1="22" y2="12"/></svg>;
+        const Trash2Icon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>;
+        const DownloadIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
+        const SearchIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" x2="16.65" y1="21" y2="16.65"/></svg>;
+        const ChevronUpIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>;
+        const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>;
+        const SunIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>;
+        const MoonIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>;
+        const LanguagesIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1m6 16h4"/><path d="m12.5 13.5 4 4"/><path d="m17 10-4-4"/><path d="m19 5-5 5"/></svg>;
+        const LightbulbIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>;
+        const BookOpenIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>;
+        const ClipboardCheckIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/></svg>;
+        const RotateCcwIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
+        const StarIcon = ({ className }) => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
+
+
+        // --- DATOS Y TRADUCCIONES (i18n) ---
+        const i18nData = {
+            es: {
+                appName: "Longevidad Celular",
+                heroTitle: "Decodificando la Longevidad",
+                heroSubtitle: "Explora los Siete Pilares del envejecimiento y las intervenciones basadas en evidencia.",
+                explorePillars: "Explorar Pilares",
+                openMasterTable: "Abrir Tabla Maestra",
+                pillars: {
+                    title: "Los Siete Pilares del Envejecimiento Celular",
+                    subtitle: "Un marco para entender y actuar sobre la biología del envejecimiento.",
+                    glossary: "Glosario de Términos Clave",
+                    biomarkerGlossaryTitle: "Glosario de Biomarcadores",
+                    keyProcessGlossaryTitle: "Glosario de Procesos Clave",
+                    data: [
+                        { name: "ADN / Información", shortName: "ADN", function: "Protección del código fuente", processes: "Reparación de roturas (PARP, p53); Longitud telomérica", biomarkers: "Acortamiento de telómeros, γ-H2AX↑; Piel foto-envejecida, riesgo oncológico", agents: "Resveratrol/Pterostilbeno; Metformina", lifestyle: "Fotoprotección; Dormir >7 h (reparación nocturna)" },
+                        { name: "Mitocondrias / Energía", shortName: "Mitocondrias", function: "Planta de poder", processes: "Fosforilación oxidativa (OXPHOS); Dinámica fusión/fisión", biomarkers: "Caída de VO₂ max, ATP↓, NAD⁺↓, lactato↑", agents: "Ácido Alfa Lipoico (ALA); Nicotinamida (NR/NMN)", lifestyle: "HIIT, contraste frío/sauna; Dieta rica en polifenoles" },
+                        { name: "Vías Metabólicas", shortName: "Vías Metabólicas", function: "Gerente de operaciones", processes: "AMPK (sensor de combustible); mTOR, Sirtuinas", biomarkers: "IGF-1↑, insulina de ayuno↑", agents: "Metformina; Berberina (similar a Metformina)", lifestyle: "Ayuno intermitente; restricción calórica moderada" },
+                        { name: "Control de Calidad", shortName: "Control de Calidad", function: "Proteostasis/autofagia", processes: "Chaperonas moleculares; Autofagia y mitofagia", biomarkers: "Acumulación de proteínas mal plegadas; Lipofuscina en tejidos", agents: "EGCG (Té Verde); Espermidina", lifestyle: "Ayuno ocasional; ejercicio de resistencia; Sueño profundo" },
+                        { name: "Seguridad / Sist. Inmune", shortName: "Sist. Inmune", function: "Defensa e inflamación", processes: "Vigilancia de patógenos; Control de células senescentes", biomarkers: "PCR-hs↑, IL-6↑, \"inflamm-aging\"", agents: "Curcumina; Andrografólido", lifestyle: "Sueño 7–9 h; ejercicio moderado; reducción de estrés" },
+                        { name: "Necesidades Celulares", shortName: "Necesidades Cel.", function: "Cadena de suministro", processes: "Micronutrientes (Mg, Vit D); Función de células madre", biomarkers: "Vit D < 30 ng/ml, DHEA↓", agents: "Melatonina; Magnesio", lifestyle: "Dieta rica en micronutrientes; exposición solar controlada" },
+                        { name: "Gestión de Desechos", shortName: "Gestión Desechos", function: "Anti-glicación", processes: "Formación/eliminación de AGEs; Trans-glicación", biomarkers: "HbA1c↑, rigidez arterial, piel menos elástica", agents: "Carnosina; Piridoxamina", lifestyle: "Dieta baja en picos glucémicos; cocción a baja temperatura" }
+                    ],
+                    keys: { processes: "Procesos Clave", biomarkers: "Biomarcadores", agents: "Agentes Moleculares", lifestyle: "Estilo de Vida" }
+                },
+                lifestyle: {
+                    title: "Estrategias de Estilo de Vida y sus Mecanismos",
+                    subtitle: "Comprende cómo tus hábitos impactan la biología del envejecimiento a nivel celular.",
+                },
+                insights: {
+                    title: "Ideas Clave del Protocolo",
+                    subtitle: "Entendiendo el 'porqué' detrás de cada pilar a través de la analogía de 'El Cuerpo como una Fábrica'.",
+                    analogyTitle: "Analogía de la Fábrica",
+                    whatGoesWrongTitle: "Lo que Falla con el Tiempo"
+                },
+                agents: {
+                    title: "Agentes Moleculares en Detalle",
+                    subtitle: "Explora la ciencia detrás de cada agente del protocolo.",
+                    searchPlaceholder: "Buscar por agente..."
+                },
+                 glossary: {
+                    title: "Glosario del Protocolo",
+                    subtitle: "Busca y entiende los términos clave del envejecimiento celular.",
+                    searchPlaceholder: "Buscar término..."
+                },
+                questionnaire: {
+                    title: "Cuestionario de Autoevaluación",
+                    subtitle: "Establece tu línea base y mide tu progreso en el tiempo.",
+                    explanation: "Este cuestionario tiene dos propósitos. Primero, establecer una línea base en ciertas categorías de salud y envejecimiento. Segundo, este examen debe repetirse a intervalos mensuales. Esto no solo demostrará un progreso real, sino que también sacará a la luz aspectos adicionales del envejecimiento que deben abordarse.",
+                    yourScore: "Tu Puntuación",
+                    totalPossible: "Total Posible",
+                    percentage: "Porcentaje",
+                    reset: "Reiniciar",
+                    weight: "Peso (kg)",
+                    bloodPressure: "Presión Arterial (ej. 120/80)",
+                    restingHeartRate: "Frecuencia Cardíaca en Reposo (lpm)"
+                },
+                masterTable: {
+                    title: "Tabla Maestra de Agentes Moleculares",
+                    subtitle: "Busca, filtra y ordena para explorar el impacto de cada agente.",
+                    searchPlaceholder: "Buscar por agente...",
+                    export: "Exportar a CSV",
+                    noResults: "No se encontraron resultados para"
+                },
+                protocols: {
+                    title: "Protocolos Estratégicos Pre-diseñados",
+                    subtitle: "Combinaciones sinérgicas para objetivos específicos.",
+                    totalScore: "Puntuación Total",
+                    subtotals: "Subtotales por Pilar",
+                    export: "Exportar este Protocolo",
+                    data: {
+                        "Top 5 del Autor": { name: "Protocolo de Inicio (Top 5)", description: "La combinación de agentes recomendada por la Dra. Sandra para comenzar el protocolo, cubriendo todas las bases." },
+                        "The Panacea": { name: "The Panacea", description: "Énfasis en P2 Mitocondrias para la producción de energía y vitalidad celular." },
+                        "The Sweet Tooth": { name: "The Sweet Tooth", description: "Maximiza el pilar P7 (Gestión de Residuos) para combatir la glicación.", notes: "La Berberina* puede considerarse alternativa natural a la Metformina." },
+                        "The Ache Remedy": { name: "The Ache Remedy", description: "Protocolo anti-inflamatorio con foco en los pilares P5 (Inmune) y P2 (Energía)." }
+                    }
+                },
+                doses: {
+                    title: "Dosis Diarias de Referencia",
+                    subtitle: "Información de dosificación para referencia educativa.",
+                    agent: "Agente",
+                    dose: "Dosis Recomendada",
+                    notes: "Notas"
+                },
+                modal: {
+                    title: "Descargar Dataset",
+                    subtitle: "Introduce tu correo para descargar el archivo CSV y recibir futuras actualizaciones.",
+                    placeholder: "tu.correo@ejemplo.com",
+                    consent: "Acepto recibir actualizaciones sobre el proyecto.",
+                    cancel: "Cancelar",
+                    download: "Descargar",
+                    alert: "Por favor, introduce un correo válido."
+                },
+                footer: {
+                    copyright: "©"
+                },
+                tabs: ["Inicio", "Pilares", "Insights", "Estilo de Vida", "Agentes", "Tabla Maestra", "Protocolos", "Glosario", "Dosis", "Cuestionario"],
+            },
+            en: {
+                appName: "Cellular Longevity",
+                heroTitle: "Decoding Longevity",
+                heroSubtitle: "Explore the Seven Pillars of aging and evidence-based interventions.",
+                explorePillars: "Explore Pillars",
+                openMasterTable: "Open Master Table",
+                pillars: {
+                    title: "The Seven Pillars of Cellular Aging",
+                    subtitle: "A framework to understand and act on the biology of aging.",
+                    glossary: "Key Terms Glossary",
+                    biomarkerGlossaryTitle: "Biomarker Glossary",
+                    keyProcessGlossaryTitle: "Key Process Glossary",
+                    data: [
+                        { name: "DNA / Information", shortName: "DNA", function: "Source code protection", processes: "Break repair (PARP, p53); Telomere length", biomarkers: "Telomere shortening, γ-H2AX↑; Photo-aged skin, oncological risk", agents: "Resveratrol/Pterostilbene; Metformin", lifestyle: "Sun protection; Sleep >7h (nightly repair)" },
+                        { name: "Mitochondria / Energy", shortName: "Mitochondria", function: "Power plant", processes: "Oxidative phosphorylation (OXPHOS); Fusion/fission dynamics", biomarkers: "Drop in VO₂ max, ATP↓, NAD⁺↓, lactate↑", agents: "Alpha-Lipoic Acid (ALA); Nicotinamida (NR/NMN)", lifestyle: "HIIT, cold/sauna contrast; Polyphenol-rich diet" },
+                        { name: "Metabolic Pathways", shortName: "Metabolic", function: "Operations manager", processes: "AMPK (fuel sensor); mTOR, Sirtuins", biomarkers: "IGF-1↑, fasting insulin↑", agents: "Metformin; Berberine (similar to Metformin)", lifestyle: "Intermittent fasting; moderate caloric restriction" },
+                        { name: "Quality Control", shortName: "Quality Control", function: "Proteostasis/autophagy", processes: "Molecular chaperones; Autophagy and mitophagy", biomarkers: "Accumulation of misfolded proteins; Lipofuscin in tissues", agents: "EGCG (Green Tea); Spermidine", lifestyle: "Occasional fasting; resistance exercise; Deep sleep" },
+                        { name: "Security / Immune System", shortName: "Immune Syst.", function: "Defense and inflammation", processes: "Pathogen surveillance; Senescent cell control", biomarkers: "hs-CRP↑, IL-6↑, \"inflamm-aging\"", agents: "Curcumin; Andrographolide", lifestyle: "Sleep 7–9h; moderate exercise; stress reduction" },
+                        { name: "Cellular Needs", shortName: "Cellular Needs", function: "Supply chain", processes: "Micronutrients (Mg, Vit D); Stem cell function", biomarkers: "Vit D < 30 ng/ml, DHEA↓", agents: "Melatonin; Magnesium", lifestyle: "Micronutrient-rich diet; controlled sun exposure" },
+                        { name: "Waste Management", shortName: "Waste Mgmt.", function: "Anti-glycation", processes: "AGEs formation/elimination; Trans-glycation", biomarkers: "HbA1c↑, arterial stiffness, less elastic skin", agents: "Carnosine; Pyridoxamine", lifestyle: "Low glycemic peak diet; low-temperature cooking" }
+                    ],
+                    keys: { processes: "Key Processes", biomarkers: "Biomarkers", agents: "Molecular Agents", lifestyle: "Lifestyle" }
+                },
+                lifestyle: {
+                    title: "Lifestyle Strategies and Their Mechanisms",
+                    subtitle: "Understand how your habits impact the biology of aging at a cellular level.",
+                },
+                insights: {
+                    title: "Key Insights from the Protocol",
+                    subtitle: "Understanding the 'why' behind each pillar through 'The Body as a Factory' analogy.",
+                    analogyTitle: "The Factory Analogy",
+                    whatGoesWrongTitle: "What Fails Over Time"
+                },
+                agents: {
+                    title: "Molecular Agents in Detail",
+                    subtitle: "Explore the science behind each agent in the protocol.",
+                    searchPlaceholder: "Search by agent..."
+                },
+                glossary: {
+                    title: "Protocol Glossary",
+                    subtitle: "Search and understand key terms in cellular aging.",
+                    searchPlaceholder: "Search term..."
+                },
+                questionnaire: {
+                    title: "Self-Assessment Questionnaire",
+                    subtitle: "Establish your baseline and measure your progress over time.",
+                    explanation: "This questionnaire will serve two purposes. First, it will establish a baseline in certain health and aging categories. Secondly, this exam needs to be repeated at monthly intervals. This will not only demonstrate real progress, but it will also bring to light additional aspects of aging that need to be addressed.",
+                    yourScore: "Your Score",
+                    totalPossible: "Total Possible",
+                    percentage: "Percentage",
+                    reset: "Reset",
+                    weight: "Weight (lbs)",
+                    bloodPressure: "Blood Pressure (e.g. 120/80)",
+                    restingHeartRate: "Resting Heart Rate (bpm)"
+                },
+                masterTable: {
+                    title: "Master Table of Molecular Agents",
+                    subtitle: "Search, filter, and sort to explore the impact of each agent.",
+                    searchPlaceholder: "Search by agent...",
+                    export: "Export to CSV",
+                    noResults: "No results found for"
+                },
+                protocols: {
+                    title: "Pre-designed Strategic Protocols",
+                    subtitle: "Synergistic combinations for specific goals.",
+                    totalScore: "Total Score",
+                    subtotals: "Subtotals by Pillar",
+                    export: "Export this Protocol",
+                    data: {
+                        "Top 5 del Autor": { name: "Author's Top 5 (Starter)", description: "The agent combination recommended by Dr. Sandra to begin the protocol, covering all bases." },
+                        "The Panacea": { name: "The Panacea", description: "Emphasis on P2 Mitochondria for energy production and cellular vitality." },
+                        "The Sweet Tooth": { name: "The Sweet Tooth", description: "Maximizes P7 (Waste Management) to combat glycation.", notes: "Berberine* can be considered a natural alternative to Metformin." },
+                        "The Ache Remedy": { name: "The Ache Remedy", description: "Anti-inflammatory protocol focusing on P5 (Immune) and P2 (Energy)." }
+                    }
+                },
+                doses: {
+                    title: "Daily Reference Doses",
+                    subtitle: "Dosage information for educational reference.",
+                    agent: "Agent",
+                    dose: "Recommended Dose",
+                    notes: "Notes"
+                },
+                modal: {
+                    title: "Download Dataset",
+                    subtitle: "Enter your email to download the CSV file and receive future updates.",
+                    placeholder: "your.email@example.com",
+                    consent: "I agree to receive project updates.",
+                    cancel: "Cancel",
+                    download: "Download",
+                    alert: "Please enter a valid email."
+                },
+                footer: {
+                    copyright: "©"
+                },
+                tabs: ["Home", "Pillars", "Insights", "Lifestyle", "Agents", "Master Table", "Protocols", "Glossary", "Doses", "Questionnaire"],
+            },
+        };
+        
+        // --- DATOS CENTRALIZADOS (no cambian con el idioma) ---
+        // Updated to be complete and accurate based on the book's master table (p. 332)
+        const masterTableData = [
+            { agent: "Metformina", score: "3.1.3.2.2.2.3", p1: 3, p2: 1, p3: 3, p4: 2, p5: 2, p6: 2, p7: 3, total: 16 },
+            { agent: "Resveratrol/Pterostilbeno", score: "2.3.3.3.2.2.1", p1: 2, p2: 3, p3: 3, p4: 3, p5: 2, p6: 2, p7: 1, total: 16 },
+            { agent: "Curcumina", score: "2.3.1.0.3.0.3", p1: 2, p2: 3, p3: 1, p4: 0, p5: 3, p6: 0, p7: 3, total: 12 },
+            { agent: "Ácido Alfa Lipoico (ALA)", score: "2.3.1.0.2.2.1", p1: 2, p2: 3, p3: 1, p4: 0, p5: 2, p6: 2, p7: 1, total: 11 },
+            { agent: "EGCG", score: "2.2.1.2.1.1.2", p1: 2, p2: 2, p3: 1, p4: 2, p5: 1, p6: 1, p7: 2, total: 11 },
+            { agent: "Melatonina", score: "2.2.1.2.2.2.0", p1: 2, p2: 2, p3: 1, p4: 2, p5: 2, p6: 2, p7: 0, total: 11 },
+            { agent: "Apigenina", score: "2.1.0.1.2.0.0", p1: 2, p2: 1, p3: 0, p4: 1, p5: 2, p6: 0, p7: 0, total: 6 },
+            { agent: "Quercetina", score: "0.3.1.2.2.2.0", p1: 0, p2: 3, p3: 1, p4: 2, p5: 2, p6: 2, p7: 0, total: 10 },
+            { agent: "Sulforafano", score: "3.2.0.1.0.2.0", p1: 3, p2: 2, p3: 0, p4: 1, p5: 0, p6: 2, p7: 0, total: 8 },
+            { agent: "Nicotinamida (NR/NMN)", score: "0.3.3.3.0.0.0", p1: 0, p2: 3, p3: 3, p4: 3, p5: 0, p6: 0, p7: 0, total: 9 },
+            { agent: "Carnosina", score: "0.3.0.0.0.0.3", p1: 0, p2: 3, p3: 0, p4: 0, p5: 0, p6: 0, p7: 3, total: 6 },
+            { agent: "Astaxantina", score: "0.3.0.0.2.0.0", p1: 0, p2: 3, p3: 0, p4: 0, p5: 2, p6: 0, p7: 0, total: 5 },
+            { agent: "Astrágalo", score: "3.0.0.0.2.1.0", p1: 3, p2: 0, p3: 0, p4: 0, p5: 2, p6: 1, p7: 0, total: 6 },
+            { agent: "Piridoxamina", score: "0.0.0.0.0.0.3", p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, p6: 0, p7: 3, total: 3 },
+            { agent: "Aloe Vera", score: "1.3.0.0.3.2.1", p1: 1, p2: 3, p3: 0, p4: 0, p5: 3, p6: 2, p7: 1, total: 10 },
+            { agent: "Andrografólido", score: "1.2.0.1.3.1.1", p1: 1, p2: 2, p3: 0, p4: 1, p5: 3, p6: 1, p7: 1, total: 9 },
+            { agent: "Ácido Quebúlico", score: "0.2.0.0.2.1.3", p1: 0, p2: 2, p3: 0, p4: 0, p5: 2, p6: 1, p7: 3, total: 8 },
+            { agent: "Cistanche Deserticola", score: "1.2.0.1.3.2.0", p1: 1, p2: 2, p3: 0, p4: 1, p5: 3, p6: 2, p7: 0, total: 9 },
+            { agent: "Delfinidina", score: "1.3.0.1.2.0.0", p1: 1, p2: 3, p3: 0, p4: 1, p5: 2, p6: 0, p7: 0, total: 7 },
+            { agent: "Ecklonia Cava", score: "0.2.2.2.2.2.1", p1: 0, p2: 2, p3: 2, p4: 2, p5: 2, p6: 2, p7: 1, total: 11 },
+            { agent: "Ácido Elágico", score: "1.2.2.0.2.0.1", p1: 1, p2: 2, p3: 2, p4: 0, p5: 2, p6: 0, p7: 1, total: 8 },
+            { agent: "Naringenina", score: "1.2.1.2.2.3.0", p1: 1, p2: 2, p3: 1, p4: 2, p5: 2, p6: 3, p7: 0, total: 11 },
+            { agent: "Polypodium Leucotomos", score: "0.2.0.3.2.0.0", p1: 0, p2: 2, p3: 0, p4: 3, p5: 2, p6: 0, p7: 0, total: 7 },
+            { agent: "Ácido Rosmarínico", score: "0.3.0.1.2.0.3", p1: 0, p2: 3, p3: 0, p4: 1, p5: 2, p6: 0, p7: 3, total: 9 },
+            { agent: "Yerba Mate", score: "0.2.2.2.2.0.2", p1: 0, p2: 2, p3: 2, p4: 2, p5: 2, p6: 0, p7: 2, total: 10 }
+        ];
+
+        const protocolsData = {
+            "Top 5 del Autor": {
+                rows: [
+                    { agente: "Pterostilbeno", p1: 2, p2: 3, p3: 3, p4: 3, p5: 2, p6: 2, p7: 1 },
+                    { agente: "Astaxantina", p1: 0, p2: 3, p3: 0, p4: 0, p5: 2, p6: 0, p7: 0 },
+                    { agente: "Nicotinamida", p1: 0, p2: 3, p3: 3, p4: 3, p5: 0, p6: 0, p7: 0 },
+                    { agente: "Curcumina", p1: 2, p2: 3, p3: 1, p4: 0, p5: 3, p6: 0, p7: 3 },
+                    { agente: "Carnosina", p1: 0, p2: 3, p3: 0, p4: 0, p5: 0, p6: 0, p7: 3 }
+                ], subtotals: { p1: 4, p2: 15, p3: 7, p4: 6, p5: 7, p6: 2, p7: 7 }, total: 48
+            },
+            "The Panacea": {
+                rows: [
+                    { agente: "Pterostilbeno", p1: 2, p2: 3, p3: 3, p4: 3, p5: 2, p6: 2, p7: 1 },
+                    { agente: "Astaxantina", p1: 0, p2: 3, p3: 0, p4: 0, p5: 2, p6: 0, p7: 0 },
+                    { agente: "Nicotinamida", p1: 0, p2: 3, p3: 3, p4: 3, p5: 0, p6: 0, p7: 0 },
+                    { agente: "Curcumina", p1: 2, p2: 3, p3: 1, p4: 0, p5: 3, p6: 0, p7: 3 },
+                    { agente: "Carnosina", p1: 0, p2: 3, p3: 0, p4: 0, p5: 0, p6: 0, p7: 3 }
+                ], subtotals: { p1: 4, p2: 15, p3: 7, p4: 6, p5: 7, p6: 2, p7: 7 }, total: 48
+            },
+            "The Sweet Tooth": {
+                rows: [
+                    { agente: "Curcumina", p1: 2, p2: 3, p3: 1, p4: 0, p5: 3, p6: 0, p7: 3 },
+                    { agente: "Carnosina", p1: 0, p2: 3, p3: 0, p4: 0, p5: 0, p6: 0, p7: 3 },
+                    { agente: "Metformina*", p1: 3, p2: 1, p3: 3, p4: 2, p5: 2, p6: 2, p7: 3 },
+                    { agente: "Piridoxamina", p1: 0, p2: 0, p3: 0, p4: 0, p5: 0, p6: 0, p7: 3 },
+                    { agente: "Ácido Quebúlico", p1: 0, p2: 2, p3: 0, p4: 0, p5: 2, p6: 1, p7: 3 },
+                    { agente: "Ácido Rosmarínico", p1: 0, p2: 3, p3: 0, p4: 1, p5: 2, p6: 0, p7: 3 }
+                ], subtotals: { p1: 5, p2: 12, p3: 4, p4: 3, p5: 9, p6: 3, p7: 18 }, total: 54
+            },
+            "The Ache Remedy": {
+                rows: [
+                    { agente: "Astaxantina", p1: 0, p2: 3, p3: 0, p4: 0, p5: 2, p6: 0, p7: 0 },
+                    { agente: "Curcumina", p1: 2, p2: 3, p3: 1, p4: 0, p5: 3, p6: 0, p7: 3 },
+                    { agente: "Delfinidina", p1: 1, p2: 3, p3: 0, p4: 1, p5: 2, p6: 0, p7: 0 },
+                    { agente: "Ácido Elágico", p1: 1, p2: 2, p3: 2, p4: 0, p5: 2, p6: 0, p7: 1 },
+                    { agente: "Ácido Alfa Lipoico (ALA)", p1: 2, p2: 3, p3: 1, p4: 0, p5: 2, p6: 2, p7: 1 },
+                    { agente: "Andrografólido", p1: 1, p2: 2, p3: 0, p4: 1, p5: 3, p6: 1, p7: 1 }
+                ], subtotals: { p1: 7, p2: 16, p3: 4, p4: 2, p5: 14, p6: 3, p7: 6 }, total: 52
+            }
+        };
+
+        const dosesData = [
+            { agente: "Ácido Alfa Lipoico (ALA)", dosis: "300–600 mg", notas: "Dosis diabética: 600–1,800 mg" },
+            { agente: "Andrografólido", dosis: "400 mg", notas: "—" },
+            { agente: "Apigenina", dosis: "50 mg", notas: "—" },
+            { agente: "Astaxantina", dosis: "2–12 mg", notas: "Atletas 12 mg; con comida" },
+            { agente: "Astrágalo (TA-65)", dosis: "100–250 unidades", notas: "Cicloastragenol 5–25 mg" },
+            { agente: "Carnosina", dosis: "500 mg (2×/día)", notas: "Total 1000 mg" },
+            { agente: "Ácido Quebúlico", dosis: "200–500 mg", notas: "Hasta 1,000 mg" },
+            { agente: "Curcumina", dosis: "Depende de formulación", notas: "Alta biodisponibilidad (BCM95, Meriva)" },
+            { agente: "EGCG", dosis: "400–500 mg", notas: "Sin comida (1 taza té verde ≈ 50 mg)" },
+            { agente: "Melatonina", dosis: "3–10 mg", notas: "Antes de dormir" },
+            { agente: "Metformina", dosis: "500–2,000 mg", notas: "Requiere supervisión médica" },
+            { agente: "Nicotinamida Ribósido (NR)", dosis: "250–500 mg", notas: "—" },
+            { agente: "Pterostilbeno", dosis: "50–150 mg", notas: "Con comida" },
+            { agente: "Piridoxamina", dosis: "50–250 mg", notas: "—" },
+            { agente: "Quercetina", dosis: "500 mg", notas: "Hasta 1,200 mg" },
+            { agente: "Resveratrol", dosis: "100–250 mg", notas: "Hasta 500–1,000 mg" },
+            { agente: "Sulforafano", dosis: "400 mg", notas: "o según formulación" },
+            { agente: "Aloe Vera", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Cistanche Deserticola", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Delfinidina", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Ecklonia Cava", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Ácido Elágico", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Naringenina", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Polypodium Leucotomos", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Ácido Rosmarínico", dosis: "N/A", notas: "Consultar a un profesional" },
+            { agente: "Yerba Mate", dosis: "N/A", notas: "Consultar a un profesional" },
+        ];
+
+        const pillarIcons = [DnaIcon, ZapIcon, GitBranchIcon, RecycleIcon, ShieldIcon, PackageIcon, Trash2Icon];
+        const pillarColors = ["#ec4899", "#f97316", "#8b5cf6", "#14b8a6", "#3b82f6", "#eab308", "#ef4444"];
+        
+        const keyProcessGlossaryData = {
+            es: {
+                "Reparación de roturas del ADN (PARP, p53)": "Mecanismos celulares donde proteínas como PARP y p53 detectan y corrigen daños en el ADN para mantener la integridad del genoma.",
+                "Fosforilación oxidativa (OXPHOS)": "El principal proceso metabólico en las mitocondrias que utiliza oxígeno para generar grandes cantidades de ATP (energía celular).",
+                "Dinámica de Fusión/Fisión Mitocondrial": "Proceso por el cual las mitocondrias se unen (fusión) o se dividen (fisión) para mantener una red saludable y funcional.",
+                "AMPK": "Sensor energético celular que se activa cuando los niveles de energía son bajos, promoviendo el catabolismo y la autofagia.",
+                "mTOR": "Vía de señalización que promueve el crecimiento celular. Su inhibición está vinculada a una mayor longevidad en varios organismos.",
+                "Sirtuinas": "Familia de proteínas que regulan la salud celular, la reparación del ADN y el metabolismo, a menudo llamadas 'genes de la longevidad'.",
+                "Chaperonas moleculares": "Proteínas que ayudan a otras proteínas a plegarse correctamente, previniendo la acumulación de agregados tóxicos.",
+                "Autofagia y Mitofagia": "Proceso de 'autolimpieza' celular que elimina componentes dañados (autofagia) y mitocondrias disfuncionales (mitofagia).",
+                "Vigilancia de patógenos": "Capacidad del sistema inmune para detectar y eliminar microorganismos invasores como virus y bacterias.",
+                "Función de células madre": "Capacidad de las células madre para auto-renovarse y diferenciarse para regenerar y reparar tejidos.",
+                "Formación y eliminación de AGEs": "Proceso de formación de productos finales de glicación avanzada (AGEs) y la capacidad del cuerpo para eliminarlos.",
+                "Trans-glicación": "Mecanismo que puede romper los enlaces cruzados formados por los AGEs, restaurando la función de las proteínas."
+            },
+            en: {
+                "DNA Break Repair (PARP, p53)": "Cellular mechanisms where proteins like PARP and p53 detect and correct DNA damage to maintain genome integrity.",
+                "Oxidative Phosphorylation (OXPHOS)": "The main metabolic process in mitochondria that uses oxygen to generate large amounts of ATP (cellular energy).",
+                "Mitochondrial Fusion/Fission Dynamics": "Process by which mitochondria merge (fusion) or divide (fission) to maintain a healthy and functional network.",
+                "AMPK": "A cellular energy sensor that is activated when energy levels are low, promoting catabolism and autophagy.",
+                "mTOR": "A signaling pathway that promotes cell growth. Its inhibition is linked to increased longevity in various organisms.",
+                "Sirtuins": "A family of proteins that regulate cellular health, DNA repair, and metabolism, often called 'longevity genes'.",
+                "Molecular Chaperones": "Proteins that assist other proteins in folding correctly, preventing the accumulation of toxic aggregates.",
+                "Autophagy and Mitophagy": "Cellular 'self-cleaning' process that removes damaged components (autophagy) and dysfunctional mitochondria (mitophagy).",
+                "Pathogen Surveillance": "The immune system's ability to detect and eliminate invading microorganisms like viruses and bacteria.",
+                "Stem Cell Function": "The ability of stem cells to self-renew and differentiate to regenerate and repair tissues.",
+                "AGEs Formation and Clearance": "The process of forming advanced glycation end-products (AGEs) and the body's ability to clear them.",
+                "Trans-glycation": "A mechanism that can break the cross-links formed by AGEs, restoring protein function."
+            }
+        };
+
+        const biomarkerGlossaryData = {
+            es: {
+                "Acortamiento de telómeros": "Reducción de las tapas protectoras en los extremos de los cromosomas, asociado al envejecimiento celular.",
+                "γ-H2AX (aumentado)": "Marcador de daño en el ADN (roturas de doble cadena). Su aumento indica inestabilidad genómica.",
+                "Piel foto-envejecida": "Daño cutáneo prematuro (arrugas, manchas) causado por la exposición crónica a la radiación UV.",
+                "VO₂ max (reducido)": "Disminución de la capacidad máxima del cuerpo para consumir oxígeno, reflejando una menor eficiencia mitocondrial.",
+                "ATP (reducido)": "Bajos niveles de la principal molécula de energía celular, indicando una crisis energética.",
+                "NAD⁺ (reducido)": "Niveles disminuidos de una molécula esencial para la producción de energía y reparación del ADN.",
+                "Lactato (aumentado)": "Acumulación que puede señalar que las mitocondrias no están procesando energía eficientemente.",
+                "IGF-1 (aumentado)": "Niveles crónicamente altos de este factor de crecimiento activan vías que pueden acelerar el envejecimiento.",
+                "Insulina de ayuno (aumentada)": "Niveles elevados de insulina en sangre en ayunas, un signo de resistencia a la insulina.",
+                "Proteínas mal plegadas": "Acumulación de proteínas defectuosas que la célula no puede limpiar, causando toxicidad.",
+                "Lipofuscina": "Pigmento de 'desgaste' que se acumula en las células con la edad, compuesto por proteínas y lípidos oxidados.",
+                "PCR-hs (aumentada)": "Proteína C reactiva de alta sensibilidad, un importante marcador de inflamación sistémica en el cuerpo.",
+                "IL-6 (aumentada)": "Citoquina pro-inflamatoria. Niveles elevados son un signo clave de 'inflamm-aging'.",
+                "Vitamina D (< 30 ng/ml)": "Deficiencia de esta vitamina/hormona, crucial para la función inmune y la salud ósea.",
+                "DHEA (reducido)": "Disminución de esta hormona precursora, asociada con el envejecimiento y la pérdida de vitalidad.",
+                "HbA1c (aumentada)": "Hemoglobina glicada. Mide el daño por azúcar a largo plazo y el riesgo de complicaciones diabéticas.",
+                "Rigidez arterial": "Pérdida de elasticidad en las arterias, a menudo causada por la glicación (AGEs), aumentando el riesgo cardiovascular."
+            },
+            en: {
+                "Telomere Shortening": "Reduction of the protective caps at the ends of chromosomes, associated with cellular aging.",
+                "γ-H2AX (increased)": "A marker of DNA damage (double-strand breaks). Its increase indicates genomic instability.",
+                "Photo-aged Skin": "Premature skin damage (wrinkles, spots) caused by chronic exposure to UV radiation.",
+                "VO₂ max (reduced)": "Decrease in the body's maximum capacity to consume oxygen, reflecting lower mitochondrial efficiency.",
+                "ATP (reduced)": "Low levels of the main cellular energy molecule, indicating an energy crisis.",
+                "NAD⁺ (reduced)": "Decreased levels of an essential molecule for energy production and DNA repair.",
+                "Lactate (increased)": "Accumulation that can signal that mitochondria are not processing energy efficiently.",
+                "IGF-1 (increased)": "Chronically high levels of this growth factor activate pathways that can accelerate aging.",
+                "Fasting Insulin (increased)": "Elevated levels of insulin in the blood while fasting, a sign of insulin resistance.",
+                "Misfolded Proteins": "Accumulation of defective proteins that the cell cannot clear, causing toxicity.",
+                "Lipofuscin": "'Wear-and-tear' pigment that accumulates in cells with age, composed of oxidized proteins and lipids.",
+                "hs-CRP (increased)": "High-sensitivity C-reactive protein, a major marker of systemic inflammation in the body.",
+                "IL-6 (increased)": "Pro-inflammatory cytokine. Elevated levels are a key sign of 'inflamm-aging'.",
+                "Vitamin D (< 30 ng/ml)": "Deficiency of this vitamin/hormone, crucial for immune function and bone health.",
+                "DHEA (reduced)": "Decrease in this precursor hormone, associated with aging and loss of vitality.",
+                "HbA1c (increased)": "Glycated hemoglobin. Measures long-term sugar damage and risk of diabetic complications.",
+                "Arterial Stiffness": "Loss of elasticity in the arteries, often caused by glycation (AGEs), increasing cardiovascular risk."
+            }
+        };
+        
+        const lifestyleStrategiesData = {
+            es: [
+                { name: "Fotoprotección", pillarIds: [1], description: "Proteger la piel de la radiación UV previene daños directos al ADN, reduciendo mutaciones y el riesgo de envejecimiento prematuro y cáncer de piel." },
+                { name: "Sueño de Calidad (>7h)", pillarIds: [1, 4, 5], description: "Durante el sueño profundo, el cuerpo activa mecanismos intensivos de reparación del ADN y limpieza celular (autofagia), además de regular el sistema inmune." },
+                { name: "HIIT (Entrenamiento Interválico de Alta Intensidad)", pillarIds: [2], description: "Estimula la biogénesis mitocondrial (creación de nuevas mitocondrias) y mejora la eficiencia de la producción de energía (ATP)." },
+                { name: "Contraste Frío/Sauna (Hormesis)", pillarIds: [2], description: "La exposición a estresores térmicos controlados activa las 'proteínas de choque térmico' y mejora la función mitocondrial, un proceso conocido como hormesis." },
+                { name: "Dieta Rica en Polifenoles", pillarIds: [2], description: "Compuestos como los que se encuentran en bayas y té verde actúan como antioxidantes, protegiendo a las mitocondrias del daño oxidativo." },
+                { name: "Ayuno Intermitente y Ocasional", pillarIds: [3, 4], description: "Activa vías de longevidad como AMPK e induce la autofagia, promoviendo la limpieza celular y mejorando la sensibilidad a la insulina." },
+                { name: "Restricción Calórica Moderada", pillarIds: [3], description: "Imita los efectos del ayuno, reduciendo la actividad de la vía mTOR y activando sirtuinas, lo que se asocia con una mayor longevidad." },
+                { name: "Ejercicio de Resistencia", pillarIds: [4], description: "El estrés mecánico en los músculos durante el ejercicio de fuerza estimula la proteostasis y la autofagia para reparar y construir tejido muscular." },
+                { name: "Ejercicio Moderado", pillarIds: [5], description: "Reduce la inflamación crónica (inflamm-aging) y mejora la vigilancia del sistema inmunitario contra patógenos y células dañadas." },
+                { name: "Reducción de Estrés", pillarIds: [5], description: "El estrés crónico eleva el cortisol, lo que puede suprimir la función inmune y aumentar la inflamación. Técnicas como la meditación lo contrarrestan." },
+                { name: "Dieta Rica en Micronutrientes", pillarIds: [6], description: "Asegura que las células tengan las 'materias primas' (vitaminas, minerales como Mg y Vit D) necesarias para todas sus funciones vitales." },
+                { name: "Exposición Solar Controlada", pillarIds: [6], description: "Esencial para la síntesis de Vitamina D en la piel, un regulador clave del sistema inmune y la salud celular." },
+                { name: "Dieta Baja en Picos Glucémicos", pillarIds: [7], description: "Minimiza la formación de productos finales de glicación avanzada (AGEs), que dañan las proteínas y causan rigidez en los tejidos." },
+                { name: "Cocción a Baja Temperatura", pillarIds: [7], description: "Métodos como cocinar al vapor o hervir en lugar de freír o asar a altas temperaturas reducen la ingesta de AGEs preformados en los alimentos." }
+            ],
+            en: [
+                { name: "Sun Protection", pillarIds: [1], description: "Protecting the skin from UV radiation prevents direct DNA damage, reducing mutations and the risk of premature aging and skin cancer." },
+                { name: "Quality Sleep (>7h)", pillarIds: [1, 4, 5], description: "During deep sleep, the body activates intensive DNA repair and cellular cleaning (autophagy) mechanisms, as well as regulating the immune system." },
+                { name: "HIIT (High-Intensity Interval Training)", pillarIds: [2], description: "Stimulates mitochondrial biogenesis (creation of new mitochondria) and improves the efficiency of energy production (ATP)." },
+                { name: "Cold/Sauna Contrast (Hormesis)", pillarIds: [2], description: "Exposure to controlled thermal stressors activates 'heat shock proteins' and improves mitochondrial function, a process known as hormesis." },
+                { name: "Polyphenol-Rich Diet", pillarIds: [2], description: "Compounds found in berries and green tea act as antioxidants, protecting mitochondria from oxidative damage." },
+                { name: "Intermittent and Occasional Fasting", pillarIds: [3, 4], description: "Activates longevity pathways like AMPK and induces autophagy, promoting cellular cleanup and improving insulin sensitivity." },
+                { name: "Moderate Caloric Restriction", pillarIds: [3], description: "Mimics the effects of fasting, reducing mTOR pathway activity and activating sirtuins, which is associated with greater longevity." },
+                { name: "Resistance Exercise", pillarIds: [4], description: "Mechanical stress on muscles during strength training stimulates proteostasis and autophagy to repair and build muscle tissue." },
+                { name: "Moderate Exercise", pillarIds: [5], description: "Reduces chronic inflammation (inflamm-aging) and improves the immune system's surveillance against pathogens and damaged cells." },
+                { name: "Stress Reduction", pillarIds: [5], description: "Chronic stress raises cortisol, which can suppress immune function and increase inflammation. Techniques like meditation counteract this." },
+                { name: "Micronutrient-Rich Diet", pillarIds: [6], description: "Ensures that cells have the necessary 'raw materials' (vitamins, minerals like Mg and Vit D) for all their vital functions." },
+                { name: "Controlled Sun Exposure", pillarIds: [6], description: "Essential for the synthesis of Vitamin D in the skin, a key regulator of the immune system and cellular health." },
+                { name: "Low Glycemic Peak Diet", pillarIds: [7], description: "Minimizes the formation of advanced glycation end-products (AGEs), which damage proteins and cause tissue stiffness." },
+                { name: "Low-Temperature Cooking", pillarIds: [7], description: "Methods like steaming or boiling instead of frying or grilling at high temperatures reduce the intake of pre-formed AGEs in food." }
+            ]
+        };
+
+        const insightsData = {
+            es: [
+                { pillarId: 1, analogy: "El ADN es el 'manual de instrucciones' o el código fuente de la fábrica. Contiene todos los planos para construir y operar cada parte del cuerpo.", whatGoesWrong: "Con el tiempo, este manual sufre 'errores de imprenta' (daño en el ADN) y se desgasta (acortamiento de telómeros). Si los planos son incorrectos, los productos finales serán defectuosos." },
+                { pillarId: 2, analogy: "Las mitocondrias son la 'planta de energía' de la fábrica. Toman el combustible (comida) y lo convierten en la electricidad (ATP) que alimenta toda la maquinaria.", whatGoesWrong: "La planta de energía se vuelve vieja e ineficiente. Produce menos energía y genera más 'contaminación' (radicales libres), dañando la propia fábrica desde adentro." },
+                { pillarId: 3, analogy: "Las vías metabólicas (AMPK, mTOR) son el 'gerente de operaciones'. Deciden cuándo la fábrica debe crecer y construir (mTOR) y cuándo debe conservar energía y reciclar (AMPK).", whatGoesWrong: "El gerente se queda atascado en 'modo de crecimiento' (mTOR) incluso cuando no es necesario, gastando recursos imprudentemente y acelerando el desgaste general." },
+                { pillarId: 4, analogy: "El control de calidad es el 'departamento de mantenimiento'. Inspecciona las proteínas (productos), repara las defectuosas y envía las irreparables a reciclar (autofagia).", whatGoesWrong: "El equipo de mantenimiento se vuelve lento y menos eficiente. Los productos defectuosos se acumulan, obstaculizando las líneas de producción y volviéndose tóxicos." },
+                { pillarId: 5, analogy: "El sistema inmune es el 'equipo de seguridad'. Patrulla la fábrica en busca de invasores externos (patógenos) y problemas internos (células senescentes).", whatGoesWrong: "El equipo de seguridad se vuelve paranoico y demasiado agresivo. Comienza a causar pequeños 'incendios' (inflamación crónica) por toda la fábrica, dañando la infraestructura." },
+                { pillarId: 6, analogy: "Las necesidades celulares son la 'cadena de suministro'. Se asegura de que cada estación de trabajo reciba las materias primas (micronutrientes) y los trabajadores de reemplazo (células madre) que necesita.", whatGoesWrong: "La cadena de suministro se interrumpe. Las materias primas no llegan y la reserva de trabajadores de reemplazo se agota, lo que impide las reparaciones y el mantenimiento." },
+                { pillarId: 7, analogy: "La gestión de desechos es el 'equipo de limpieza y reciclaje'. Elimina los subproductos tóxicos, como el 'caramelo pegajoso' (AGEs) que se acumula en la maquinaria.", whatGoesWrong: "El equipo de limpieza no da abasto. Los desechos pegajosos (AGEs) se acumulan, haciendo que la maquinaria se vuelva rígida y se rompa, y el 'basurero' celular (lipofuscina) se desborda." }
+            ],
+            en: [
+                { pillarId: 1, analogy: "DNA is the factory's 'instruction manual' or source code. It contains all the blueprints to build and operate every part of the body.", whatGoesWrong: "Over time, this manual suffers 'typos' (DNA damage) and wears out (telomere shortening). If the blueprints are incorrect, the final products will be defective." },
+                { pillarId: 2, analogy: "Mitochondria are the factory's 'power plant'. They take fuel (food) and convert it into the electricity (ATP) that powers all the machinery.", whatGoesWrong: "The power plant becomes old and inefficient. It produces less energy and generates more 'pollution' (free radicals), damaging the factory itself from within." },
+                { pillarId: 3, analogy: "Metabolic pathways (AMPK, mTOR) are the 'operations manager'. They decide when the factory should grow and build (mTOR) and when it should conserve energy and recycle (AMPK).", whatGoesWrong: "The manager gets stuck in 'growth mode' (mTOR) even when it's not necessary, spending resources recklessly and accelerating overall wear and tear." },
+                { pillarId: 4, analogy: "Quality control is the 'maintenance department'. It inspects proteins (products), repairs defective ones, and sends irreparable ones for recycling (autophagy).", whatGoesWrong: "The maintenance crew becomes slow and less efficient. Defective products accumulate, jamming the production lines and becoming toxic." },
+                { pillarId: 5, analogy: "The immune system is the 'security team'. It patrols the factory for external invaders (pathogens) and internal troublemakers (senescent cells).", whatGoesWrong: "The security team becomes paranoid and over-aggressive. It starts causing small 'fires' (chronic inflammation) throughout the factory, damaging the infrastructure." },
+                { pillarId: 6, analogy: "Cellular needs are the 'supply chain'. It ensures that each workstation receives the necessary raw materials (micronutrients) and replacement workers (stem cells).", whatGoesWrong: "The supply chain gets disrupted. Raw materials don't arrive, and the pool of replacement workers dwindles, preventing repairs and maintenance." },
+                { pillarId: 7, analogy: "Waste management is the 'cleaning and recycling crew'. It removes toxic byproducts, like the 'sticky caramel' (AGEs) that gums up the machinery.", whatGoesWrong: "The cleaning crew can't keep up. Sticky waste (AGEs) accumulates, causing machinery to become rigid and break, and the cellular 'trash can' (lipofuscin) overflows." }
+            ]
+        };
+
+        const agentsDetailsData = {
+            es: {
+                "Metformina": "Un medicamento para la diabetes bien establecido, la Metformina activa la vía AMPK, imitando los efectos de la restricción calórica. Ayuda a mejorar la sensibilidad a la insulina, reduce la producción de glucosa en el hígado y tiene potentes efectos anti-glicación (P7). También modula la epigenética y apoya la reparación del ADN (P1).",
+                "Resveratrol/Pterostilbeno": "Potentes activadores de las sirtuinas (P3), una familia de proteínas clave para la longevidad. Mejoran la función mitocondrial (P2), ofrecen protección antioxidante, ayudan en la reparación del ADN (P1) y promueven la autofagia para el control de calidad celular (P4).",
+                "Curcumina": "El compuesto activo de la cúrcuma, es un potente antiinflamatorio que inhibe la vía NF-κβ (P5). También es un fuerte antioxidante, protege las mitocondrias (P2), ayuda a eliminar los productos de glicación (P7) y tiene efectos moduladores sobre el ADN (P1).",
+                "Ácido Alfa Lipoico (ALA)": "Conocido como el 'antioxidante universal' por ser soluble tanto en grasa como en agua. Es crucial para la producción de energía mitocondrial (P2) y recicla otros antioxidantes como las vitaminas C y E. También apoya la reparación del ADN (P1) y mejora la sensibilidad a la insulina.",
+                "EGCG": "El principal polifenol del té verde, EGCG promueve la autofagia (P4), mejora el metabolismo a través de la vía AMPK (P3) y ofrece protección antioxidante mitocondrial (P2). También apoya la salud del ADN (P1) y tiene efectos antiinflamatorios (P5).",
+                "Melatonina": "Más que una hormona del sueño, es un potente antioxidante que protege las mitocondrias (P2) y el ADN (P1). Ayuda a regular el sistema inmune (P5), apoya la función de las células madre (P6) e induce procesos de control de calidad (P4).",
+                "Apigenina": "Un flavonoide que se encuentra en la manzanilla, protege el ADN del daño (P1) y tiene propiedades antiinflamatorias (P5). También apoya el control de calidad celular (P4) y la salud mitocondrial (P2).",
+                "Quercetina": "Un potente flavonoide que funciona como senolítico, ayudando a eliminar células senescentes (P6). Es un fuerte antioxidante mitocondrial (P2), apoya el control de calidad (P4) y tiene importantes efectos antiinflamatorios (P5).",
+                "Sulforafano": "Proveniente de vegetales crucíferos como el brócoli, es un potente activador de la vía Nrf2, lo que aumenta las defensas antioxidantes endógenas del cuerpo, protegiendo el ADN (P1) y las mitocondrias (P2). También apoya la función de las células madre (P6).",
+                "Nicotinamida (NR/NMN)": "Precursores de NAD+, una molécula esencial que disminuye con la edad. Aumentar los niveles de NAD+ es crucial para la producción de energía mitocondrial (P2), la activación de sirtuinas (P3) y los procesos de control de calidad y reparación del ADN (P4).",
+                "Carnosina": "Un dipéptido con una potente acción anti-glicación, que protege las proteínas del daño por azúcar (P7). También es un antioxidante que protege las mitocondrias (P2).",
+                "Astaxantina": "Un carotenoide que se encuentra en las microalgas, es uno de los antioxidantes más potentes conocidos, ofreciendo una protección excepcional a las mitocondrias (P2) y al sistema inmune (P5).",
+                "Astrágalo": "Una hierba de la medicina tradicional china que contiene cicloastragenol, un conocido activador de la telomerasa que ayuda a proteger y alargar los telómeros del ADN (P1). También tiene efectos inmunomoduladores (P5).",
+                "Piridoxamina": "Una forma de vitamina B6, es uno de los inhibidores de la formación de AGEs (productos finales de la glicación avanzada) más eficaces, ofreciendo una protección superior contra el daño por azúcar (P7).",
+                "Aloe Vera": "Conocido por sus propiedades curativas, el Aloe Vera ofrece un fuerte apoyo al sistema inmune (P5) y a las mitocondrias (P2), al tiempo que ayuda a satisfacer las necesidades celulares (P6).",
+                "Andrografólido": "Un potente compuesto antiinflamatorio (P5) que también apoya la función mitocondrial (P2) y la integridad del ADN (P1).",
+                "Ácido Quebúlico": "Destaca en la gestión de residuos celulares, combatiendo la glicación (P7), y también proporciona apoyo antioxidante (P2) e inmunitario (P5).",
+                "Cistanche Deserticola": "Una hierba utilizada para la vitalidad, que apoya fuertemente el sistema inmunitario (P5) y las necesidades celulares (P6), con beneficios para la energía mitocondrial (P2).",
+                "Delfinidina": "Un antioxidante que se encuentra en las bayas oscuras, excelente para la salud mitocondrial (P2) y el apoyo al sistema inmunitario (P5).",
+                "Ecklonia Cava": "Un alga marina rica en polifenoles, que proporciona un apoyo equilibrado en múltiples pilares, incluyendo las vías metabólicas (P3), el control de calidad (P4) y la salud mitocondrial (P2).",
+                "Ácido Elágico": "Se encuentra en frutas y frutos secos, y apoya las vías metabólicas (P3), la salud mitocondrial (P2) y el sistema inmunitario (P5).",
+                "Naringenina": "Un flavonoide de los cítricos que apoya las necesidades celulares (P6), el control de calidad (P4) y ofrece beneficios antiinflamatorios (P5).",
+                "Polypodium Leucotomos": "Un extracto de helecho conocido por proteger la piel, que apoya fuertemente el control de calidad celular (P4) y el sistema inmunitario (P5).",
+                "Ácido Rosmarínico": "Se encuentra en hierbas como el romero, y es excelente para combatir la glicación (P7) y apoyar la salud mitocondrial (P2).",
+                "Yerba Mate": "Un estimulante tradicional que proporciona un apoyo equilibrado a través de las vías metabólicas (P3), el control de calidad (P4) y la gestión de residuos (P7)."
+            },
+            en: {
+                "Metformina": "A well-established diabetes medication, Metformin activates the AMPK pathway, mimicking the effects of caloric restriction. It helps improve insulin sensitivity, reduces glucose production in the liver, and has potent anti-glycation effects (P7). It also modulates epigenetics and supports DNA repair (P1).",
+                "Resveratrol/Pterostilbeno": "Potent activators of sirtuins (P3), a key family of longevity proteins. They enhance mitochondrial function (P2), offer antioxidant protection, aid in DNA repair (P1), and promote autophagy for cellular quality control (P4).",
+                "Curcumina": "The active compound in turmeric, is a powerful anti-inflammatory that inhibits the NF-κβ pathway (P5). It's also a strong antioxidant, protecting mitochondria (P2), helping to clear glycation products (P7), and has DNA modulatory effects (P1).",
+                "Ácido Alfa Lipoico (ALA)": "Known as the 'universal antioxidant' for being both fat and water-soluble. It is crucial for mitochondrial energy production (P2) and recycles other antioxidants like vitamins C & E. It also supports DNA repair (P1) and improves insulin sensitivity.",
+                "EGCG": "The main polyphenol in green tea, EGCG promotes autophagy (P4), improves metabolism via the AMPK pathway (P3), and provides mitochondrial antioxidant protection (P2). It also supports DNA health (P1) and has anti-inflammatory effects (P5).",
+                "Melatonina": "More than a sleep hormone, it's a potent antioxidant that protects mitochondria (P2) and DNA (P1). It helps regulate the immune system (P5), supports stem cell function (P6), and induces quality control processes (P4).",
+                "Apigenina": "A flavonoid found in chamomile, it protects DNA from damage (P1) and has anti-inflammatory properties (P5). It also supports cellular quality control (P4) and mitochondrial health (P2).",
+                "Quercetina": "A powerful flavonoid that functions as a senolytic, helping to clear senescent cells (P6). It is a strong mitochondrial antioxidant (P2), supports quality control (P4), and has significant anti-inflammatory effects (P5).",
+                "Sulforafano": "From cruciferous vegetables like broccoli, it is a potent activator of the Nrf2 pathway, which boosts the body's endogenous antioxidant defenses, protecting DNA (P1) and mitochondria (P2). It also supports stem cell function (P6).",
+                "Nicotinamida (NR/NMN)": "Precursors to NAD+, an essential molecule that declines with age. Boosting NAD+ is crucial for mitochondrial energy production (P2), sirtuin activation (P3), and quality control and DNA repair processes (P4).",
+                "Carnosina": "A dipeptide with powerful anti-glycation action, protecting proteins from sugar damage (P7). It is also an antioxidant that protects mitochondria (P2).",
+                "Astaxantina": "A carotenoid found in microalgae, it is one of the most potent antioxidants known, offering exceptional protection to mitochondria (P2) and the immune system (P5).",
+                "Astrágalo": "A traditional Chinese medicine herb containing cycloastragenol, a known telomerase activator that helps protect and lengthen DNA telomeres (P1). It also has immunomodulatory effects (P5).",
+                "Piridoxamina": "A form of vitamin B6, it is one of the most effective inhibitors of AGEs (Advanced Glycation End-products) formation, offering superior protection against sugar damage (P7).",
+                "Aloe Vera": "Known for its healing properties, Aloe Vera provides strong support to the immune system (P5) and mitochondria (P2), while also aiding cellular needs (P6).",
+                "Andrographolide": "A potent anti-inflammatory compound (P5) that also supports mitochondrial function (P2) and DNA integrity (P1).",
+                "Ácido Quebúlico": "Excels at cellular waste management by combating glycation (P7), and also provides antioxidant (P2) and immune support (P5).",
+                "Cistanche Deserticola": "An herb used for vitality, it strongly supports the immune system (P5) and cellular needs (P6), with benefits for mitochondrial energy (P2).",
+                "Delfinidina": "An antioxidant found in dark berries, excellent for mitochondrial health (P2) and immune system support (P5).",
+                "Ecklonia Cava": "A brown alga rich in polyphenols, providing balanced support across multiple pillars, including metabolic pathways (P3), quality control (P4), and mitochondrial health (P2).",
+                "Ácido Elágico": "Found in fruits and nuts, it supports metabolic pathways (P3), mitochondrial health (P2), and the immune system (P5).",
+                "Naringenina": "A flavonoid from citrus fruits that supports cellular needs (P6), quality control (P4), and offers anti-inflammatory benefits (P5).",
+                "Polypodium Leucotomos": "A fern extract known for skin protection, strongly supporting cellular quality control (P4) and the immune system (P5).",
+                "Ácido Rosmarínico": "Found in herbs like rosemary, it's excellent for fighting glycation (P7) and supporting mitochondrial health (P2).",
+                "Yerba Mate": "A traditional stimulant that provides balanced support across metabolic pathways (P3), quality control (P4), and waste management (P7)."
+            }
+        };
+
+        const questionnaireQuestionsData = {
+             es: [
+                { id: 1, text: "MI NIVEL GENERAL DE ENERGÍA:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantástico"] },
+                { id: 2, text: "MI NIVEL DE ACTIVIDAD ACTUAL:", type: 'range', min: 1, max: 10, labels: ["No Activo", "Muy Activo"] },
+                { id: 3, text: "MI IMPULSO SEXUAL O LIBIDO:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Muy Activo"] },
+                { id: 4, text: "ME SIENTO AGOTADO/A A MEDIODÍA:", type: 'range', min: 1, max: 10, labels: ["Destrozado/a", "Energía sin fin"] },
+                { id: 5, text: "ESTOY CONTENTO/A CON LA FORMA DE MI CUERPO:", type: 'range', min: 1, max: 10, labels: ["Nada", "Luzco increíble"] },
+                { id: 6, text: "ESTOY CONTENTO/A CON MI PIEL:", type: 'range', min: 1, max: 10, labels: ["Nada", "Es fantástica"] },
+                { id: 7, text: "TENGO INFECCIONES RESPIRATORIAS (Resfriados, secreción nasal, neumonía):", type: 'select', min: 1, max: 5, options: ["Siempre estoy enfermo/a", "Cada mes", "2-4 veces/año", "1 vez/año", "Nunca"] },
+                { id: 8, text: "TENGO ALERGIAS (POLEN, PERROS, ETC.):", type: 'range', min: 1, max: 10, labels: ["Terribles", "Ninguna"] },
+                { id: 9, text: "MI PATRÓN DE PÉRDIDA O ADELGAZAMIENTO DEL CABELLO:", type: 'range', min: 1, max: 10, labels: ["Pérdida significativa", "Ninguna"] },
+                { id: 10, text: "TENGO DOLOR DE ESPALDA, DOLOR ARTICULAR CRÓNICO O RIGIDEZ:", type: 'select', min: 1, max: 5, options: ["Siempre", "Diariamente", "Semanalmente", "Solo después de hacer ejercicio", "Nunca"] },
+                { id: 11, text: "NIVEL DE DOLOR:", type: 'range', min: 1, max: 10, labels: ["Miseria absoluta", "Muy poco"] },
+                { id: 12, text: "TENGO PROBLEMAS PARA DORMIR:", type: 'range', min: 1, max: 10, labels: ["No puedo dormir nada", "Duermo muy bien"] },
+                { id: 13, text: "MI VISIÓN DIURNA ES:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantástica"] },
+                { id: 14, text: "MI VISIÓN NOCTURNA ES:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantástica"] },
+                { id: 15, text: "MI VISIÓN DE CERCA ES:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantástica"] },
+                { id: 16, text: "CALIFICO MI MEMORIA COMO:", type: 'range', min: 1, max: 10, labels: ["No recuerdo nada", "Memoria de hierro"] },
+                { id: 17, text: "CALIFICARÍA MI DIETA COMO:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantástica"] }
+            ],
+            en: [
+                { id: 1, text: "MY OVERALL ENERGY LEVEL:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantastic"] },
+                { id: 2, text: "MY PRESENT ACTIVITY LEVEL:", type: 'range', min: 1, max: 10, labels: ["Not Active", "Very Active"] },
+                { id: 3, text: "MY SEX DRIVE OR LIBIDO:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Very Active"] },
+                { id: 4, text: "I FEEL EXHAUSTED BY MID DAY:", type: 'range', min: 1, max: 10, labels: ["Wiped out", "Endless Energy"] },
+                { id: 5, text: "I AM HAPPY WITH MY BODY SHAPE:", type: 'range', min: 1, max: 10, labels: ["Not At All", "I Look Amazing"] },
+                { id: 6, text: "I AM HAPPY WITH MY SKIN:", type: 'range', min: 1, max: 10, labels: ["Not At All", "It's Fantastic"] },
+                { id: 7, text: "I GET RESPIRATORY INFECTIONS (Colds, runny nose, pneumonia):", type: 'select', min: 1, max: 5, options: ["I am always sick", "Every month", "2-4x a year", "1x a year", "Never"] },
+                { id: 8, text: "I HAVE ALLERGIES (POLLEN, DOGS, ETC.):", type: 'range', min: 1, max: 10, labels: ["Terrible", "Not At All"] },
+                { id: 9, text: "MY PATTERN OF HAIR LOSS OR THINNING:", type: 'range', min: 1, max: 10, labels: ["Significant Hair Loss", "Not At All"] },
+                { id: 10, text: "I HAVE BACK PAIN, CHRONIC JOINT PAIN OR STIFFNESS:", type: 'select', min: 1, max: 5, options: ["Always", "Daily", "Weekly", "After exercise only", "Never"] },
+                { id: 11, text: "PAIN LEVEL:", type: 'range', min: 1, max: 10, labels: ["Absolute Misery", "Very Little"] },
+                { id: 12, text: "I HAVE TROUBLE SLEEPING:", type: 'range', min: 1, max: 10, labels: ["I Can't Sleep a Bit", "I Sleep Very Well"] },
+                { id: 13, text: "MY DAYTIME VISION IS:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantastic"] },
+                { id: 14, text: "MY NIGHT TIME VISION IS:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantastic"] },
+                { id: 15, text: "MY UP CLOSE VISION IS:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantastic"] },
+                { id: 16, text: "I RATE MY MEMORY AS:", type: 'range', min: 1, max: 10, labels: ["I Can't Remember a Thing", "Iron Clad Memory"] },
+                { id: 17, text: "I WOULD RATE MY DIET AS:", type: 'range', min: 1, max: 10, labels: ["Terrible", "Fantastic"] }
+            ]
+        };
+        
+        const fullGlossaryData = {
+          es: {
+            "Sistema Inmune Adaptativo": "Un componente del sistema inmune; retiene la memoria del enemigo.",
+            "Adyuvante": "Una sustancia que no tienes previamente en tu cuerpo. Es una sustancia completamente nueva y rastreable.",
+            "AGEs": "Producto Final de Glicación Avanzada. Se forma cuando el azúcar, generalmente glucosa o fructosa, se adhiere a una molécula en condiciones de estrés oxidativo.",
+            "ALEs": "Producto Final de Oxidación Lipídica Avanzada. Se forma cuando un azúcar se une de forma no enzimática a un lípido.",
+            "Ácido Alfa Lipoico": "Uno de nuestros adyuvantes, también conocido como Ácido Tióctico, factor de reemplazo de acetato, billet, lipoicina o factor de oxidación de piruvato. Científicamente, es ácido 1,2-ditiolano-3-pentanoico. Calificación Cabo Health: 2.3.1.0.2.2.1",
+            "Aminoguanidina": "Reconocida en 1986 como el primer agente propuesto para ayudar en la erradicación de los AGEs. No se utiliza hoy en día debido a sus efectos secundarios.",
+            "AMP": "Adenosín monofosfato, una molécula con un estado de energía más bajo que el ATP.",
+            "AMP Kinasa": "Proteína quinasa activada por adenosín monofosfato. Un regulador central del metabolismo celular y del organismo que juega un papel crítico en el mantenimiento de la homeostasis energética. También conocido como el Interruptor Maestro Metabólico.",
+            "Sistemas Anabólicos": "Procesos que construyen cosas.",
+            "Anticuerpos": "Proteínas en forma de Y que vienen en una variedad de configuraciones. Identifican y se adhieren a patógenos específicos.",
+            "Antioxidante": "Una molécula que inhibe la oxidación de otras moléculas. La oxidación es una reacción química que puede producir radicales libres, llevando a reacciones en cadena que pueden dañar las células.",
+            "Apigenina": "Uno de nuestros adyuvantes, también una de las principales sustancias activas en el té de manzanilla. Calificación Cabo Health: 2.1.0.1.2.0.0",
+            "Apoptosis": "Muerte celular programada.",
+            "Astaxantina": "Uno de nuestros suplementos, un carotenoide xantofila. Calificación Cabo Health: 0.3.0.0.2.0.0",
+            "Astragalus Radix Membranaceus": "Utilizado en la medicina china durante más de 2,000 años y fortalece el 'Qi'. Compuesto de cicloastragenol, astragalósido IV e innumerables otros componentes. Calificación Cabo Health: 3.0.0.0.2.1.0",
+            "ATP": "Adenosín Trifosfato. La unidad celular o molecular de la moneda energética.",
+            "Autofagia": "Literalmente significa 'comerse a sí mismo'. Una vía catabólica que promueve la degradación y el reciclaje de componentes celulares.",
+            "Reparación por Escisión de Bases (BER)": "El sistema de reparación de ADN más básico, se ocupa de lesiones únicas o pequeñas alteraciones de bases. Usualmente repara problemas de una sola hebra.",
+            "Barrera Hematoencefálica": "Una barrera real que separa el flujo sanguíneo del tejido cerebral mientras fluye por el cráneo. La barrera funciona para mantener las toxinas y moléculas no deseadas fuera del cerebro.",
+            "BMAL1": "Brain and muscle-ARNT-like 1. Parte de la familia de proteínas que funcionan durante el día. Controla los ritmos circadianos.",
+            "Restricción Calórica": "Una reducción del 30% (a veces del 20 al 50%) de las calorías sin inanición de una dieta estándar.",
+            "Miméticos de la Restricción Calórica": "Metformina, Resveratrol, Pterostilbeno, EGCG, Quercetina, Curcumina.",
+            "Carnosina": "Un dipéptido natural, compuesto de L-histidina y B-alanina. Calificación Cabo Health: 0.3.0.0.0.0.3",
+            "Mecanismos Catabólicos": "Procesos que descomponen las cosas en piezas más pequeñas.",
+            "Catalasa": "Una enzima común que se encuentra en casi todos los organismos vivos expuestos al oxígeno. Cataliza la descomposición del peróxido de hidrógeno en agua y oxígeno.",
+            "Detención del Ciclo Celular": "Cuando una célula permanece en la misma etapa de la vida.",
+            "Proteoma Celular": "El conjunto completo de proteínas celulares.",
+            "Té de Manzanilla": "La principal fuente de apigenina. Otros compuestos incluyen alfa-bisabolol, quercetina y 120 metabolitos secundarios, incluyendo 28 terpenoides y 36 flavonoides.",
+            "Chaperonas": "Proteínas que acompañan a otras proteínas más grandes a lo largo de sus vidas proteicas. El deber de las chaperonas es proteger la proteína mientras se transforma en diferentes formas y protegerla de ataques cuando es vulnerable.",
+            "Codón": "Un triplete de pares de bases en el ADN, que codifica para cada uno de los 20 aminoácidos que se encuentran en los humanos.",
+            "Colágeno": "Moléculas que proporcionan el marco estructural en la mayoría de los órganos, pueden estirarse alrededor de un 10%.",
+            "CLOCK": "Circadian Locomotor Output Cycles Kaput. Ubicado principalmente en el núcleo supraquiasmático del hipotálamo.",
+            "Curcumina": "La sustancia activa de la especia cúrcuma. Calificación Cabo Health: 2.3.1.0.3.0.3",
+            "Giro Dentado": "Un área en el cerebro, específicamente en el hipocampo. Contribuye a la formación de nuevas memorias episódicas y a la exploración espontánea de nuevos entornos.",
+            "Dímeros de Pirimidina Ciclobutano": "CPDs. Complejos que se forman cuando el ADN se 'funde'.",
+            "Diabetes": "Una enfermedad de hiperglucemia.",
+            "ADN": "Ácido desoxirribonucleico.",
+            "Daño en el ADN": "Medido por 8-hidroxi-2-desoxiguanosina.",
+            "Sistema de Respuesta al Daño del ADN": "DDR. Un sistema con cuatro componentes principales: sensores de daño, transductores de señal, efectores de reparación y detención celular.",
+            "ADN Metiltransferasa": "DNMT. Una enzima que altera la epigenética del ADN, transfiriendo específicamente un grupo metilo.",
+            "Epigallocatechin Gallate": "EGCG. El ingrediente más activo del té verde. Calificación Cabo Health: 2.2.1.2.1.1.2.",
+            "Epigenética": "La ciencia de la genética más allá de la disposición de los pares de bases.",
+            "Reloj Epigenético": "Un método para determinar la edad examinando sitios específicos de metilación del ADN.",
+            "Dieta Epigenética": "El consumo de ciertos alimentos, como soja, uvas, verduras crucíferas y té verde, que se ha demostrado que inducen mecanismos epigenéticos que protegen contra el cáncer y el envejecimiento.",
+            "Deriva Epigenética": "Cambios relacionados con la edad en el epigenoma que incluyen aquellos adquiridos tanto ambientalmente como estocásticamente.",
+            "Cadena de Transporte de Electrones": "Una serie de proteínas incrustadas en la membrana interna de la mitocondria que crean un gradiente químico para producir ATP.",
+            "Teoría de la Endosimbiosis": "Una teoría de que las mitocondrias fueron una vez células independientes que fueron engullidas por células más grandes y ahora sirven como su fuente de energía.",
+            "Retículo Endoplásmico": "Un orgánulo largo y tubular que sirve como línea de montaje para la producción de proteínas.",
+            "Radicales Libres": "Una molécula o átomo sin carga que tiene un solo electrón desapareado o cualquier especie capaz de existencia independiente que contiene uno o más electrones desapareados.",
+            "Captador de Radicales Libres": "Una molécula que es capaz de destruir los radicales libres.",
+            "Genotipo": "Los rasgos que están codificados en los genes.",
+            "Glicación": "El proceso de un azúcar uniéndose con un segundo tipo de molécula.",
+            "Gluconeogénesis": "La creación de nuevas moléculas de glucosa.",
+            "Hematopoyesis": "La generación de células sanguíneas.",
+            "Hipocampo": "Un área bilateral en el cerebro asociada con la formación de la memoria.",
+            "Histamina": "Una molécula responsable de dilatar los vasos sanguíneos y reclutar factores inflamatorios, y causar prurito.",
+            "Histona Deacetilasa": "HDAC. Una enzima que altera la epigenética del ADN, eliminando específicamente un grupo acetilo.",
+            "Hidralazina": "Un medicamento generalmente utilizado para tratar la presión arterial alta que en realidad puede prevenir la formación de AGE.",
+            "Sistema Inmune Innato": "La primera línea de defensa inmunológica.",
+            "Células T Asesinas": "Células inmunes que encuentran y destruyen las células humanas infectadas que han sido comprometidas.",
+            "Leucocitos": "Glóbulos blancos.",
+            "Lipólisis": "La descomposición de la grasa y los triglicéridos.",
+            "Lipofuscina": "Un material intracelular no digerible compuesto principalmente de proteínas y lípidos oxidados.",
+            "Macrófagos": "Un subtipo de glóbulos blancos (es decir, Grandes Comedores, por sus raíces griegas).",
+            "Mastocitos": "Un subtipo menos numeroso de glóbulos blancos. Desempeñan un papel en la cicatrización de heridas, la producción de vasos sanguíneos (angiogénesis) y la protección de la barrera hematoencefálica. Es importante destacar que estas células liberan histamina.",
+            "Melatonina": "Una molécula antigua, técnicamente una indolamina producida endógenamente. Calificación Cabo Health: 2.2.1.2.2.2.0",
+            "Metformina": "Un medicamento recetado conocido con el nombre comercial de Glucophage. Se utiliza para el control de la diabetes. Calificación Cabo Health: 3.1.3.2.2.2.3",
+            "Mitocondrias": "Orgánulos intracelulares que se especializan en la producción de energía.",
+            "Mitosis": "División celular en la que el contenido de cada célula hija es idéntico.",
+            "mTOR": "Una vía que es esencial para el crecimiento y el desarrollo cuando se es joven.",
+            "Nicotinamida": "Uno de los suplementos clave. Necesario para la producción de energía, la reparación del ADN, las sirtuinas y la comunicación celular. Calificación Cabo Health: 0.3.3.3.0.0.0",
+            "Neutrófilos": "El tipo más común de glóbulos blancos, constituyen alrededor del 60 al 70% de los glóbulos blancos circulantes.",
+            "Factor Nuclear (derivado de eritroide 2) similar a 2 (Nrf2)": "Un factor de transcripción que activa una serie de antioxidantes endógenos.",
+            "Factor Nuclear Kappa-Beta": "Una citoquina en la cúspide de la cascada inflamatoria.",
+            "Reparación por Escisión de Nucleótidos": "NER. Un proceso de reparación del ADN que escinde trozos más grandes o voluminosos del ADN.",
+            "Osteoblastos": "Células óseas que construyen nuevo hueso.",
+            "Osteoclastos": "Células óseas que trabajan en la demolición.",
+            "Oxidación": "Pérdida de un electrón, un aumento en el estado oxidativo.",
+            "Páncreas": "Un órgano abdominal importante que produce insulina.",
+            "Patógenos": "Cualquier agente biológico que pueda dañar o causar enfermedad a su huésped.",
+            "Periodo 1": "PERs. Una familia de proteínas nocturnas, asociadas con los CRYs (Criptocromo 1 y 2).",
+            "Fenotipo": "Qué rasgos se ven en un individuo.",
+            "Fitoalexina": "Una sustancia producida por las plantas cuando dicha planta se estresa.",
+            "Poli-ADP-Ribosa Polimerasa": "PARPs. Una enzima que detecta y repara las roturas en el ADN.",
+            "Proteostasis": "La homeostasis de la producción de proteínas, es la capacidad de una célula para sintetizar, plegar y renovar proteínas.",
+            "Proteotoxicidad": "Proteínas mal adaptadas que se vuelven tóxicas.",
+            "Protones": "Átomos de H+.",
+            "Pterostilbeno": "Un estilbeno relacionado con el resveratrol. Derivado principalmente de los arándanos. Calificación Cabo Health: 2.3.3.3.2.2.1",
+            "Piridoxamina": "Un subtipo de la vitamina B6 y un suplemento recomendado. Calificación Cabo Health: 0.0.0.0.0.0.3",
+            "Pirimidina Pirimidonas": "Un complejo molecular que se forma cuando el ADN se 'funde'.",
+            "Quercetina": "Un flavonoide ubicuo. Calificación Cabo Health: 0.3.1.2.2.2.0",
+            "Rapamicina": "Un medicamento que se utiliza por sus cualidades inmunosupresoras. También es la sustancia clave que identificó la vía mTOR.",
+            "Reductor": "La ganancia de un electrón o la disminución del estado oxidativo.",
+            "Resveratrol": "Un estilbeno que se encuentra en muchos alimentos, incluido el vino tinto. Calificación Cabo Health: 2.3.3.3.2.2.1",
+            "Senescencia": "Un tipo de jubilación para las células. En lugar de morir, permanecen activas pero terminan dañando al organismo.",
+            "Fenotipo Secretor Asociado a la Senescencia": "SASP. La producción y liberación de enzimas degradantes, proteasas y citoquinas inflamatorias, así como otros compuestos que afectan negativamente el entorno de la célula.",
+            "Sirtuinas": "Familia de genes Reguladores de Información Silenciosa. Una familia de genes que regula las vías metabólicas y de crecimiento del cuerpo.",
+            "Células Madre": "Células indiferenciadas y de larga vida que son únicas en su capacidad para producir células hijas diferenciadas y para retener su identidad de célula madre mediante la autorrenovación.",
+            "Sulforafano": "Una molécula de isotiocianato que se encuentra en las verduras crucíferas, especialmente en el brócoli, pero también en la col rizada, el repollo y las coles de Bruselas. Calificación Cabo Health: 3.2.0.1.0.2.0",
+            "Suplemento": "Un agente que puedes tomar y que ya tienes en tu cuerpo. Simplemente estás aumentando la cantidad total.",
+            "Superóxido Dismutasa": "Enzimas endógenas que eliminan los radicales libres.",
+            "Telómeros": "Los extremos del ADN. Su longitud se correlaciona con la esperanza de vida esperada.",
+            "Telomerasa": "Una enzima endógena que crea telómeros más largos.",
+            "Telomerasa Transcriptasa Inversa": "TERT. Una enzima endógena que crea telómeros más largos.",
+            "Factor de Necrosis Tumoral (TNF)": "Una citoquina inflamatoria que se encuentra en la cima de la cascada inflamatoria.",
+            "Sistema Ubiquitina/Proteasoma": "UPS. El principal sistema celular para la eliminación selectiva de proteínas mal plegadas o dañadas.",
+            "Radiación UVA": "(longitud de onda 320-400 nm) Constituye gran parte de la radiación solar que nos llega, alrededor del 90 al 95%. Conocido como el 'rayo del envejecimiento'.",
+            "UVB": "(longitudes de onda entre 280-320 nm) Representa aproximadamente el 5% de la radiación solar y penetra toda la epidermis y la dermis."
+          },
+          en: {
+             "Adaptive Immune System": "A component of the immune system; it retains the memory of the enemy.",
+             "Adjuvant": "A substance that you don’t already have within you. It is a brand new, traceable substance.",
+             "AGEs": "Advanced Glycation End Product(s). Formed when sugar, usually glucose or fructose, latches onto a molecule under oxidative, stressful conditions.",
+             "ALEs": "Advanced Lipid oxidation End products. Formed when a sugar non enzymatically attaches to a lipid.",
+             "Alpha Lipoic Acid": "One of our adjuvants, aka Thioctic acid, acetate replacing factor, billet, lipoicin, or pyruvate oxidation factor. Scientifically, it is 1,2 - dithiolane-3-pentanoic acid. Cabo Health Rating: 2.3.1.0.2.2.1",
+             "Aminoguanine": "Recognized in 1986 as the first agent proposed to help in the eradication of AGEs. Not used today secondary side effects.",
+             "AMP": "Adenosine monophosphate, a molecule having a lower state of energy than ATP.",
+             "AMP Kinase": "Adenosine Monophosphate-activated Protein Kinase. A central regulator of cellular and organismal metabolism that plays a critical role in maintaining energy homeostasis. Also known as the Metabolic Master Switch.",
+             "Anabolic Systems": "Processes that build things.",
+             "Antibodies": "Y shaped proteins that come in a variety of configurations (different numbers of Y’s stuck together). They identify and adhere to specific pathogens.",
+             "Antioxidant": "A molecule that inhibits the oxidation of other molecules. Oxidation is a chemical reaction that can produce free radicals, leading to chain reactions that may damage cells.",
+             "Apigenin": "One of our adjuvants, also one of the main active substances in Chamomile tea. Cabo Health Rating: 2.1.0.1.2.0.0",
+             "Apoptosis": "Programmed cell death.",
+             "Astaxanthin": "One of our supplements, a xanthophyll carotenoid. Cabo Health Rating: 0.3.0.0.2.0.0",
+             "Astragalus Radix Membranaceus": "Used in Chinese medicine for over 2,000 years and strengthens the “Qi”. Composed of cycloastrogenol, astragaloside IV and innumerable other components. Cabo Health Rating: 3.0.0.0.2.1.0",
+             "ATP": "Adenosine Tri-Phosphate. The cellular or molecular unit of energy currency.",
+             "Autophagy": "Literally means “eating oneself.” A catabolic pathway that promotes the degradation and recycling of cellular components.",
+             "Base Excision Repair (BER)": "The most basic DNA repair system, deals with single lesions or small alterations of bases. Usually repairs single strand problems.",
+             "Blood Brain Barrier": "A real barrier that separates blood flow from brain tissue as it flows through the cranium. The barrier functions to keep toxins and unwanted molecules out of the brain.",
+             "BMAL1": "Brain and muscle-ARNT-like 1. Part of the daytime functioning protein family. Controls circadian rhythms.",
+             "Caloric Restriction": "A 30% (sometime 20 to 50%) reduction in calories without starvation from a standard diet",
+             "Caloric Restriction Mimetics": "Metformin, Resveratrol, Pterostilbene, EGCG, Quercetin, Curcumin",
+             "Carnosine": "A naturally occurring dipeptide, made of L-histidine and B-alanine. Cabo Health Rating: 0.3.0.0.0.0.3",
+             "Catabolic Mechanisms": "Processes that break things into smaller pieces.",
+             "Catalase": "A common enzyme found in nearly all living organisms exposed to oxygen. It catalyzes the decomposition of hydrogen peroxide to water and oxygen.",
+             "Cell Cycle arrest": "When a cell stays in the same stage of life.",
+             "Cellular Proteome": "The entire pool of cellular protein.",
+             "Chamomile Tea": "The major source of apigenin. Other compounds include alpha-bisabolol, quercetin and 120 secondary metabolites, including 28 terpenoids and 36 flavonoids.",
+             "Chaperones": "Proteins that accompany other larger proteins throughout their proteinaceous lives. The chaperones duty is to protect the protein as it morphs into different shapes and guard it from attack when it is vulnerable.",
+             "Codon": "A triplet of base pairs in the DNA, codes for each of the 20 amino acids found in humans.",
+             "Collagen": "Molecules that provide the structural framework in most organs, can stretch about 10%.",
+             "CLOCK": "The Circadian Locomotor Output Cycles Kaput. Located mainly in the suprachiasmatic nucleus of the hypothalamus.",
+             "Curcumin": "The active substance from the spice turmeric. Cabo Health Rating: 2.3.1.0.3.0.3",
+             "Dentate Gyrus": "An area in the brain, specifically in the hippocampus. It contributes to the formation of new, episodic memories and the spontaneous exploration of novel environments.",
+             "Cyclobutane Pyrimidine Dimers": "CPD’s. Complexes that form when the DNA is “melted” together.",
+             "Diabetes": "A disease of hyperglycemia.",
+             "DNA": "Deoxyribonucleic acid.",
+             "DNA Damage": "Measured by 8-hydroxy-2-deoxyguanosine",
+             "DNA Damage Response System": "DDR, A system with four main components: damage sensors, signal transducers, repair effectors, and cell arrest.",
+             "DNA Methyltransferase": "DNMT. An enzyme that alters the epigenetics of DNA, specifically transferring a methyl group.",
+             "Epigallocatechin Gallate": "EGCG. The most active ingredient in green tea. Cabo Health Rating: 2.2.1.2.1.1.2.",
+             "Epigenetics": "The science of genetics beyond that of the base pair arrangement.",
+             "Epigenetic Clock": "A method of determining age by examining specific sites of DNA methylation.",
+             "Epigenetic Diet": "The consumption of certain foods, such as soy, grapes, cruciferous vegetables and green tea, which have been shown to induce epigenetic mechanisms that protect against cancer and aging.",
+             "Epigenetic Drift": "Age-related changes in the epigenome that include those acquired both environmentally and stochastically.",
+             "Electron Transport Chain": "A series of proteins embedded in the inner membrane of the mitochondria that create a chemical gradient in order to produce ATP.",
+             "Endosymbiosis Theory": "A theory that mitochondrial were once independent cells that were engulfed into larger cells and now serve as their power supply.",
+             "Endoplasmic Reticulum": "An organelle that is long and tubular and serves as an assembly line for protein production.",
+             "Free Radicals": "An uncharged molecule or atom that has a single unpaired electron or any species capable of independent existence that contains one or more unpaired electrons.",
+             "Free Radical Scavenger": "A molecule that is able to destroy free radicals.",
+             "Genotype": "The traits that are coded for in the genes.",
+             "Glycation": "The process of a sugar bonding with a second type of molecule.",
+             "Gluconeogenesis": "The creation of new glucose molecules.",
+             "Hematopoiesis": "The generation of blood cells.",
+             "Hippocampus": "A bilateral area in the brain associated with memory formation.",
+             "Histamine": "A molecule responsible for dilating blood vessels, and recruiting inflammatory factors, and causing pruritus.",
+             "Histone Deacetylase": "HDAC. An enzyme that alters the epigenetics of DNA, specifically removing an acetyl group.",
+             "Hydralazine": "A medication generally used to treat high blood pressure that can actually prevent AGE formation.",
+             "Innate immune system": "The first line of immune defense.",
+             "Killer T Cells": "Immune cells that find and destroy infected human cells that have been compromised.",
+             "Leukocytes": "White blood cells.",
+             "Lipolysis": "The breakdown of fat and triglycerides.",
+             "Lipofuscin": "An intracellular, indigestible material mainly composed of oxidized proteins and lipids.",
+             "Macrophages": "A subtype of white blood cells. (i.e. Big Eaters, by Greek roots)",
+             "Mast Cells": "A less numerous subtype of white blood cells. They play a role in wound healing, blood vessels production (angiogenesis), and protection of the blood-brain barrier. Importantly, these cells release histamine.",
+             "Melatonin": "An ancient molecule, technically an endogenously produced indolamine. Cabo Health Rating: 2.2.1.2.2.2.0",
+             "Metformin": "A prescription medication known by the trade name Glucophage. Used for the control of diabetes. Cabo Health Rating: 3.1.3.2.2.2.3",
+             "Mitochondria": "Intracellular organelles that specialize in energy production.",
+             "Mitosis": "cell division whereby the contents of each daughter cell is identical.",
+             "mTOR": "A pathway that is essential for growth and development when you are young.",
+             "Nicotinamide": "One of the key supplements. Necessary for energy production, DNA repair, sirtuins, and cellular communication. Cabo Health Rating: 0.3.3.3.0.0.0",
+             "Neutrophils": "The most common type of white blood cell, they constitute about 60 to 70% of the circulating white blood cells.",
+             "Nuclear Factor (erythroid derived 2) like 2 (Nrf2)": "A transcription factor that activates a series of endogenous anti-oxidants.",
+             "Nuclear Factor Kappa-Beta": "A cytokine at the apex of the inflammatory cascade.",
+             "Nucleotide Excision Repair": "NER. A process of DNA repair which excises bigger or bulky pieces of the DNA.",
+             "Osteoblasts": "Bone cells that build new bone.",
+             "Osteoclasts": "Bone cells that work demolition.",
+             "Oxidation": "Loss of an electron, an increase in the oxidative state.",
+             "Pancreas": "An important abdominal organ that produces insulin.",
+             "Pathogens": "Any biological agent that can harm or bring disease to its host.",
+             "Period 1": "PERs. A night time protein family, associated with CRYs (Cryptochrome 1 and 2).",
+             "Phenotype": "What traits get seen in an individual.",
+             "Phytoalexin": "A substance produced by plants when said plant gets stressed out.",
+             "Poly-ADP-Ribose Polymerase": "PARPs. An enzyme that senses and repairs breaks in DNA.",
+             "Proteostasis": "The homeostasis of protein production, it is the ability of a cell to synthesize, fold and turnover proteins.",
+             "Proteotoxicity": "Maladapted proteins that become toxic.",
+             "Protons": "H+ atoms",
+             "Pterostilbene": "A stillbene related to resveratrol. Mostly derived from blueberries. Cabo Health Rating: 2.3.3.3.2.2.1",
+             "Pyridoxamine": "A subtype of vitamin B6 and a recommended supplement. Cabo Health Rating: 0.0.0.0.0.0.3",
+             "Pyrimidine Pyrimidones": "A molecular complex that forms when the DNA is “melted” together.",
+             "Quercetin": "A ubiquitous flavenoid. Cabo Health Rating: 0.3.1.2.2.2.0",
+             "Rapamycin": "A medication that is used for its immunosuppressant qualities. It is also the key substance that identified the mTOR pathway.",
+             "Reductive": "The gain of an electron or decrease in oxidative state.",
+             "Resveratrol": "A stilbene found in many foods including red wine. Cabo Health Rating: 2.3.3.3.2.2.1",
+             "Senescence": "A type of retirement for cells. Rather than dying, they remain active but end up harming the organism.",
+             "Senescence-Associated Secretory Phenotype": "SASP. The production and release of degradative enzymes, proteases and inflammatory cytokines as well as other compounds that negatively effect the environment of the cell.",
+             "Sirtuins": "Silent Information Regulator gene famil. A family of genes that regulates the bodies metabolic and growth pathways.",
+             "Stem Cells": "undifferentiated, long lived cells that are unique in their abilities to produce differentiated daughter cells and to retain their stem cell identity by self-renewal.",
+             "Sulforaphane": "An isothiocyanate molecule found in cruciferous vegetables, especially in broccoli, but it is also in kale, cabbage, and brussel sprouts. Cabo Health Rating: 3.2.0.1.0.2.0",
+             "Supplement": "An agent that you can take that you already actually have in your body. You are simply adding to the total quantity.",
+             "Superoxide Dismutase": "Endogenous enzymes that scavenge free radicals.",
+             "Telomeres": "The ends of DNA. The length of which correlates with the expected length of life.",
+             "Telomerase": "An endogenous enzyme that creates longer telomeres.",
+             "Telomerase Reverse Transcriptase": "TERT. An endogenous enzyme that creates longer telomeres.",
+             "Tumor necrosis Factor (TNF)": "An inflammatory cytokine that sits at the top of the inflammatory cascade.",
+             "Ubiquitin/Proteasome System": "UPS. The major cellular system for selective removal of misfiled or damaged proteins",
+             "UVA Radiation": "(wavelength 320-400 nm) Constitutes much more of the solar radiation that reaches us, about 90 to 95%. Known as the “aging ray”.",
+             "UVB": "(wavelengths of between 280-320 nm) Represents about 5% of solar radiation and penetrates the entire epidermis and into the dermis."
+          }
+        };
+        // --- COMPONENTES ---
+
+        const Tooltip = ({ text, children }) => {
+            return (
+                <div className="relative flex items-center justify-center group">
+                    {children}
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-xs p-2 text-sm text-white bg-slate-700 dark:bg-slate-700 rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-10 pointer-events-none">
+                        {text}
+                    </div>
+                </div>
+            );
+        };
+        
+        const ScoreBadge = ({ score }) => {
+            const scoreClass = `score-${score}`;
+            return (
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${scoreClass}`}>
+                    {score}
+                </span>
+            );
+        };
+
+        const Header = ({ activeTab, setActiveTab, t, lang, setLang, theme, setTheme }) => {
+            return (
+                <header className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm sticky top-0 z-20 border-b border-slate-200 dark:border-slate-800">
+                    <nav className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center py-3">
+                        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab(t.tabs[0])}>
+                            <DnaIcon className="text-slate-800 dark:text-white"/>
+                            <h1 className="text-xl font-bold text-slate-800 dark:text-white">{t.appName}</h1>
+                        </div>
+                        <div className="hidden md:flex items-center space-x-2 bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
+                            {t.tabs.map(tab => {
+                                if(tab === t.tabs[0]) return null;
+                                return (
+                                <button
+                                    key={tab}
+                                    onClick={() => setActiveTab(tab)}
+                                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 ${
+                                        activeTab === tab ? 'bg-sky-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {tab}
+                                </button>
+                                )}
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                             <button 
+                                onClick={() => setLang(lang === 'es' ? 'en' : 'es')} 
+                                className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 bg-slate-200/50 dark:bg-slate-800/50 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                            >
+                                <LanguagesIcon />
+                                <span>{lang === 'es' ? 'EN' : 'ES'}</span>
+                            </button>
+                             <button onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')} className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-600 dark:text-slate-300">
+                                {theme === 'light' ? <MoonIcon/> : <SunIcon/>}
+                             </button>
+                             <div className="md:hidden">
+                                <select 
+                                    value={activeTab}
+                                    onChange={(e) => setActiveTab(e.target.value)}
+                                    className="bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-800 dark:text-white text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full p-2.5"
+                                >
+                                    {t.tabs.map(tab => <option key={tab} value={tab}>{tab}</option>)}
+                                </select>
+                            </div>
+                        </div>
+                    </nav>
+                </header>
+            );
+        };
+        
+        const Hero = ({ t, onExplore, onOpenTable }) => (
+            <div className="text-center py-16 sm:py-24">
+                 <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-violet-600 tracking-tight">
+                    {t.heroTitle}
+                </h1>
+                <p className="mt-4 max-w-2xl mx-auto text-lg text-slate-600 dark:text-slate-400">
+                    {t.heroSubtitle}
+                </p>
+                <div className="mt-8 flex justify-center gap-4">
+                    <button onClick={onExplore} className="px-6 py-3 bg-sky-500 text-white font-semibold rounded-lg shadow-md hover:bg-sky-600 transition-colors">
+                        {t.explorePillars}
+                    </button>
+                    <button onClick={onOpenTable} className="px-6 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold rounded-lg shadow-md hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+                        {t.openMasterTable}
+                    </button>
+                </div>
+            </div>
+        );
+
+        const PillarsSection = ({ t, lang }) => {
+            return (
+                <section id="pilares" className="py-16">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.pillars.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.pillars.subtitle}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {t.pillars.data.map((pilar, index) => (
+                            <div key={index} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex flex-col hover:border-sky-500 dark:hover:border-sky-500 transition-colors duration-300">
+                                <div className="flex items-center space-x-4 mb-4">
+                                    <div className="p-2 rounded-lg" style={{backgroundColor: `${pillarColors[index]}20`, color: pillarColors[index]}}>
+                                        {React.createElement(pillarIcons[index])}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-bold text-slate-900 dark:text-white">{index + 1}. {pilar.name}</h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400">{pilar.function}</p>
+                                    </div>
+                                </div>
+                                <div className="space-y-3 text-sm flex-grow">
+                                    <p><strong className="font-semibold text-slate-700 dark:text-slate-300">{t.pillars.keys.processes}:</strong> <span className="text-slate-600 dark:text-slate-400">{pilar.processes}</span></p>
+                                    <p><strong className="font-semibold text-slate-700 dark:text-slate-300">{t.pillars.keys.biomarkers}:</strong> <span className="text-slate-600 dark:text-slate-400">{pilar.biomarkers}</span></p>
+                                    <p><strong className="font-semibold text-slate-700 dark:text-slate-300">{t.pillars.keys.agents}:</strong> <span className="text-slate-600 dark:text-slate-400">{pilar.agents}</span></p>
+                                    <p><strong className="font-semibold text-slate-700 dark:text-slate-300">{t.pillars.keys.lifestyle}:</strong> <span className="text-slate-600 dark:text-slate-400">{pilar.lifestyle}</span></p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+
+                    <div className="mt-12 space-y-8">
+                         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-center">{t.pillars.keyProcessGlossaryTitle}</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4 text-left text-sm">
+                                {Object.entries(keyProcessGlossaryData[lang]).map(([term, definition]) => (
+                                    <div key={term}>
+                                        <strong className="font-semibold text-indigo-500">{term}:</strong>
+                                        <p className="text-slate-600 dark:text-slate-400">{definition}</p>
+                                    </div>
+                                ))}
+                            </div>
+                         </div>
+                         <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                            <h3 className="text-2xl font-bold text-slate-900 dark:text-white mb-4 text-center">{t.pillars.biomarkerGlossaryTitle}</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4 text-left text-sm">
+                                {Object.entries(biomarkerGlossaryData[lang]).map(([term, definition]) => (
+                                    <div key={term}>
+                                        <strong className="font-semibold text-amber-500">{term}:</strong>
+                                        <p className="text-slate-600 dark:text-slate-400">{definition}</p>
+                                    </div>
+                                ))}
+                            </div>
+                         </div>
+                         
+                    </div>
+                </section>
+            );
+        };
+
+        const InsightsSection = ({ t, lang }) => {
+            const insights = insightsData[lang];
+            return (
+                <section id="insights" className="py-16">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.insights.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400 max-w-3xl mx-auto">{t.insights.subtitle}</p>
+                    </div>
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        {insights.map((insight) => {
+                             const pilar = t.pillars.data[insight.pillarId - 1];
+                             return (
+                                <div key={insight.pillarId} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 flex flex-col">
+                                    <div className="flex items-center space-x-4 mb-4">
+                                        <div className="p-2 rounded-lg" style={{backgroundColor: `${pillarColors[insight.pillarId-1]}20`, color: pillarColors[insight.pillarId-1]}}>
+                                            {React.createElement(pillarIcons[insight.pillarId-1])}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-xl text-slate-900 dark:text-white">{pilar.name}</h3>
+                                        </div>
+                                    </div>
+                                    <div className="space-y-4 text-sm">
+                                        <div>
+                                            <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{t.insights.analogyTitle}</h4>
+                                            <p className="text-slate-600 dark:text-slate-400 italic">"{insight.analogy}"</p>
+                                        </div>
+                                         <div>
+                                            <h4 className="font-semibold text-slate-700 dark:text-slate-300 mb-1">{t.insights.whatGoesWrongTitle}</h4>
+                                            <p className="text-slate-600 dark:text-slate-400">{insight.whatGoesWrong}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                             );
+                        })}
+                    </div>
+                </section>
+            );
+        };
+
+        const LifestyleSection = ({ t, lang }) => {
+            return (
+                <section id="lifestyle" className="py-16">
+                    <div className="text-center mb-12">
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.lifestyle.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.lifestyle.subtitle}</p>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {lifestyleStrategiesData[lang].map((strategy) => (
+                            <div key={strategy.name} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                                <h3 className="font-bold text-lg text-slate-900 dark:text-white mb-2">{strategy.name}</h3>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                    {strategy.pillarIds.map(id => (
+                                        <span key={id} style={{backgroundColor: `${pillarColors[id-1]}30`, color: pillarColors[id-1], borderColor: pillarColors[id-1]}} className="text-xs font-semibold px-2.5 py-0.5 rounded-full border">
+                                            Pilar {id}: {t.pillars.data[id-1].shortName}
+                                        </span>
+                                    ))}
+                                </div>
+                                <p className="text-sm text-slate-600 dark:text-slate-400">{strategy.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            );
+        };
+        
+        const AgentsSection = ({ t, lang }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            const [openAgent, setOpenAgent] = useState(null);
+
+            const agentDetails = agentsDetailsData[lang];
+
+            const filteredAgents = useMemo(() => {
+                return masterTableData
+                    .sort((a,b) => a.agent.localeCompare(b.agent))
+                    .filter(agent =>
+                        agent.agent.toLowerCase().includes(searchTerm.toLowerCase())
+                    );
+            }, [searchTerm, lang]);
+
+            const toggleAgent = (agentName) => {
+                setOpenAgent(openAgent === agentName ? null : agentName);
+            };
+
+            return (
+                <section id="agents" className="py-16">
+                    <div className="text-center mb-12">
+                        <div className="inline-block bg-slate-200 dark:bg-slate-800 p-3 rounded-full mb-4">
+                            <BookOpenIcon className="h-8 w-8 text-sky-500" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.agents.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.agents.subtitle}</p>
+                    </div>
+                    
+                    <div className="mb-8 max-w-lg mx-auto">
+                         <div className="relative">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500 dark:text-slate-400">
+                                <SearchIcon />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder={t.agents.searchPlaceholder}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-3"
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        {filteredAgents.map(agent => (
+                            <div key={agent.agent} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden transition-all duration-300">
+                                <button onClick={() => toggleAgent(agent.agent)} className="w-full text-left p-4 md:p-6 flex justify-between items-center hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <div className="flex-1">
+                                      <h3 className="font-bold text-lg text-slate-900 dark:text-white">{agent.agent.split('/')[0]}</h3>
+                                      {agent.agent.split('/')[1] && <span className="text-sm text-slate-500 dark:text-slate-400"> / {agent.agent.split('/')[1]}</span>}
+                                    </div>
+                                    <div className="flex items-center gap-2 sm:gap-4 ml-4">
+                                      <div className="hidden sm:flex items-center gap-2">
+                                        {Array.from({ length: 7 }).map((_, i) => (
+                                          <Tooltip key={`score-${i}`} text={`P${i+1}: ${t.pillars.data[i].shortName}`}>
+                                            <ScoreBadge score={agent[`p${i+1}`]} />
+                                          </Tooltip>
+                                        ))}
+                                      </div>
+                                      <span className={`transition-transform duration-300 ${openAgent === agent.agent ? 'rotate-180' : ''}`}>
+                                        <ChevronDownIcon />
+                                      </span>
+                                    </div>
+                                </button>
+                                {openAgent === agent.agent && (
+                                    <div className="px-4 md:px-6 pb-6 border-t border-slate-200 dark:border-slate-700">
+                                      <div className="flex sm:hidden items-center gap-2 mt-4 mb-2">
+                                        {Array.from({ length: 7 }).map((_, i) => (
+                                          <Tooltip key={`mobile-score-${i}`} text={`P${i+1}: ${t.pillars.data[i].shortName}`}>
+                                            <ScoreBadge score={agent[`p${i+1}`]} />
+                                          </Tooltip>
+                                        ))}
+                                      </div>
+                                      <p className="text-slate-600 dark:text-slate-400 mt-4 leading-relaxed">{agentDetails[agent.agent.split('/')[0]] || agentDetails[agent.agent] || "No details available."}</p>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            );
+        };
+        
+        const GlossarySection = ({ t, lang }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            const glossary = fullGlossaryData[lang];
+
+            const filteredGlossary = useMemo(() => {
+                return Object.entries(glossary)
+                    .filter(([term, definition]) => 
+                        term.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                        definition.toLowerCase().includes(searchTerm.toLowerCase())
+                    )
+                    .sort((a, b) => a[0].localeCompare(b[0]));
+            }, [searchTerm, glossary]);
+
+            return (
+                 <section id="glossary" className="py-16">
+                    <div className="text-center mb-12">
+                        <div className="inline-block bg-slate-200 dark:bg-slate-800 p-3 rounded-full mb-4">
+                            <BookOpenIcon className="h-8 w-8 text-sky-500" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.glossary.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.glossary.subtitle}</p>
+                    </div>
+                     <div className="mb-8 max-w-lg mx-auto">
+                         <div className="relative">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500 dark:text-slate-400">
+                                <SearchIcon />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder={t.glossary.searchPlaceholder}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-3"
+                            />
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredGlossary.map(([term, definition]) => (
+                            <div key={term} className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <h3 className="font-bold text-lg text-sky-600 dark:text-sky-400 mb-2">{term}</h3>
+                                <p className="text-slate-600 dark:text-slate-400 text-sm">{definition}</p>
+                            </div>
+                        ))}
+                    </div>
+                </section>
+            );
+        };
+
+
+        const QuestionnaireSection = ({ t, lang }) => {
+            const questions = questionnaireQuestionsData[lang];
+            const initialAnswers = questions.reduce((acc, q) => ({ ...acc, [q.id]: q.min }), {});
+            
+            const [answers, setAnswers] = useState(initialAnswers);
+            const [biometrics, setBiometrics] = useState({ weight: '', bp: '', hr: '' });
+
+            const totalPossibleScore = questions.reduce((sum, q) => sum + q.max, 0);
+            
+            const handleAnswerChange = (id, value) => {
+                setAnswers(prev => ({...prev, [id]: Number(value)}));
+            };
+            
+            const handleBiometricChange = (e) => {
+                const { name, value } = e.target;
+                setBiometrics(prev => ({...prev, [name]: value}));
+            };
+
+            const resetForm = () => {
+                setAnswers(initialAnswers);
+                setBiometrics({ weight: '', bp: '', hr: '' });
+            };
+
+            const currentScore = Object.values(answers).reduce((sum, val) => sum + val, 0);
+            const percentage = totalPossibleScore > 0 ? ((currentScore / totalPossibleScore) * 100).toFixed(0) : 0;
+            
+            const getScoreColor = (percent) => {
+                if (percent >= 75) return 'text-emerald-500';
+                if (percent >= 40) return 'text-amber-500';
+                return 'text-red-500';
+            };
+
+            return (
+                <section id="questionnaire" className="py-16">
+                    <div className="text-center mb-12">
+                        <div className="inline-block bg-slate-200 dark:bg-slate-800 p-3 rounded-full mb-4">
+                            <ClipboardCheckIcon className="h-8 w-8 text-sky-500" />
+                        </div>
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.questionnaire.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.questionnaire.subtitle}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+                        <div className="lg:col-span-2 space-y-8">
+                            <div className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
+                                <p className="text-slate-600 dark:text-slate-400 italic mb-6">{t.questionnaire.explanation}</p>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">{t.questionnaire.weight}</label>
+                                        <input type="text" name="weight" value={biometrics.weight} onChange={handleBiometricChange} className="w-full bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm"/>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">{t.questionnaire.bloodPressure}</label>
+                                        <input type="text" name="bp" value={biometrics.bp} onChange={handleBiometricChange} className="w-full bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm"/>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-slate-700 dark:text-slate-300 block mb-1">{t.questionnaire.restingHeartRate}</label>
+                                        <input type="text" name="hr" value={biometrics.hr} onChange={handleBiometricChange} className="w-full bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 rounded-md p-2 text-sm"/>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {questions.map((q) => (
+                                <div key={q.id} className="bg-white dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <label className="font-semibold text-slate-800 dark:text-slate-200 block mb-4">{q.id}. {q.text}</label>
+                                    {q.type === 'range' && (
+                                        <>
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="text-sm text-slate-500">{q.labels[0]}</span>
+                                                <span className="text-lg font-bold text-sky-500">{answers[q.id]}</span>
+                                                <span className="text-sm text-slate-500">{q.labels[1]}</span>
+                                            </div>
+                                            <input
+                                                type="range"
+                                                min={q.min}
+                                                max={q.max}
+                                                value={answers[q.id]}
+                                                onChange={(e) => handleAnswerChange(q.id, e.target.value)}
+                                                className="w-full h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
+                                            />
+                                        </>
+                                    )}
+                                    {q.type === 'select' && (
+                                        <div className="flex flex-wrap gap-2">
+                                            {q.options.map((option, index) => (
+                                                <button 
+                                                  key={index} 
+                                                  onClick={() => handleAnswerChange(q.id, index + 1)}
+                                                  className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 border ${
+                                                      answers[q.id] === index + 1 
+                                                      ? 'bg-sky-500 text-white border-sky-500' 
+                                                      : 'bg-slate-100 dark:bg-slate-700 border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                                  }`}
+                                                >
+                                                  {option}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                        <div className="lg:col-span-1">
+                          <div className="sticky top-24 bg-white dark:bg-slate-800 p-6 rounded-lg border border-slate-200 dark:border-slate-700">
+                            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4 text-center">{t.questionnaire.yourScore}</h3>
+                            <div className="text-center mb-6">
+                                <p className={`text-7xl font-extrabold ${getScoreColor(percentage)}`}>{currentScore}</p>
+                                <p className="text-slate-500 dark:text-slate-400">de {totalPossibleScore} {t.questionnaire.totalPossible}</p>
+                            </div>
+                            <div className="relative h-4 w-full bg-slate-200 dark:bg-slate-700 rounded-full mb-2">
+                                <div style={{width: `${percentage}%`}} className="absolute top-0 left-0 h-4 bg-gradient-to-r from-sky-400 to-violet-500 rounded-full transition-all duration-500"></div>
+                            </div>
+                            <p className="text-center font-bold text-lg text-slate-700 dark:text-slate-300 mb-6">{percentage}%</p>
+                            <button onClick={resetForm} className="w-full flex items-center justify-center gap-2 px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                                <RotateCcwIcon />
+                                {t.questionnaire.reset}
+                            </button>
+                          </div>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+        
+        const MasterTableSection = ({ t, onExport }) => {
+            const [searchTerm, setSearchTerm] = useState('');
+            const [sortConfig, setSortConfig] = useState({ key: 'total', direction: 'descending' });
+            
+            const tableHeaders = [
+                { key: 'agent', label: t.doses.agent, sortable: true },
+                ...t.pillars.data.map((p, i) => ({ key: `p${i+1}`, label: `P${i+1}`, sortable: true })),
+                { key: 'total', label: 'Total', sortable: true }
+            ];
+
+            const filteredData = useMemo(() => masterTableData.filter(item => item.agent.toLowerCase().includes(searchTerm.toLowerCase())), [searchTerm]);
+
+            const sortedData = useMemo(() => {
+                let sortableItems = [...filteredData];
+                if (sortConfig.key) {
+                    sortableItems.sort((a, b) => {
+                        if (a[sortConfig.key] < b[sortConfig.key]) return sortConfig.direction === 'ascending' ? -1 : 1;
+                        if (a[sortConfig.key] > b[sortConfig.key]) return sortConfig.direction === 'ascending' ? 1 : -1;
+                        return 0;
+                    });
+                }
+                return sortableItems;
+            }, [filteredData, sortConfig]);
+
+            const handleSort = (key) => {
+                let direction = 'ascending';
+                if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+                    direction = 'descending';
+                }
+                setSortConfig({ key, direction });
+            };
+            
+            const renderRow = (row) => (
+                <tr key={row.agent} className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <th scope="row" className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{row.agent}</th>
+                    {Array.from({ length: 7 }, (_, i) => i + 1).map(pilarId => (
+                        <td key={pilarId} className="px-6 py-4 text-center">
+                            <Tooltip text={t.pillars.data[pilarId - 1].name}>
+                                 <ScoreBadge score={row[`p${pilarId}`]} />
+                            </Tooltip>
+                        </td>
+                    ))}
+                    <td className="px-6 py-4 font-bold text-slate-900 dark:text-white text-center">{row.total}</td>
+                </tr>
+            );
+            
+            const renderSortIcon = (key) => {
+                if (sortConfig.key !== key) {
+                    return <div className="h-4 w-4 opacity-30 group-hover:opacity-100"><ChevronUpIcon/></div>;
+                }
+                return sortConfig.direction === 'ascending' ? <ChevronUpIcon/> : <ChevronDownIcon/>;
+            };
+
+            return (
+                <section id="tabla-maestra" className="py-16">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.masterTable.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.masterTable.subtitle}</p>
+                    </div>
+                    <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                        <div className="relative w-full md:w-1/3">
+                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-500 dark:text-slate-400">
+                                <SearchIcon />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder={t.masterTable.searchPlaceholder}
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-full pl-10 p-2.5"
+                            />
+                        </div>
+                        <button 
+                            onClick={() => onExport(sortedData)}
+                            className="w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition-colors"
+                        >
+                            <DownloadIcon />
+                            {t.masterTable.export}
+                        </button>
+                    </div>
+                     <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                        <div className="overflow-x-auto table-scrollbar">
+                            <table className="w-full min-w-[1200px] text-sm text-left text-slate-500 dark:text-slate-400">
+                                <thead className="text-xs text-slate-700 dark:text-slate-300 uppercase bg-slate-100 dark:bg-slate-800">
+                                    <tr>
+                                        <th scope="col" rowSpan="2" className="px-6 py-3 align-bottom border-b border-r border-slate-200 dark:border-slate-700">
+                                            <div className="flex items-center cursor-pointer group" onClick={() => handleSort('agent')}>
+                                                {t.doses.agent}
+                                                <span className="ml-1.5">{renderSortIcon('agent')}</span>
+                                            </div>
+                                        </th>
+                                        {t.pillars.data.map((p, i) => (
+                                            <th key={i} scope="col" className="px-2 py-2 text-center font-normal normal-case tracking-tighter text-[10px] whitespace-nowrap border-b border-slate-200 dark:border-slate-700">
+                                                {p.name}
+                                            </th>
+                                        ))}
+                                        <th scope="col" rowSpan="2" className="px-6 py-3 align-bottom border-b border-l border-slate-200 dark:border-slate-700">
+                                             <div className="flex items-center justify-center cursor-pointer group" onClick={() => handleSort('total')}>
+                                                Total
+                                                <span className="ml-1.5">{renderSortIcon('total')}</span>
+                                            </div>
+                                        </th>
+                                    </tr>
+                                    <tr>
+                                        {tableHeaders.filter(h => h.key.startsWith('p')).map(header => (
+                                             <th key={header.key} scope="col" className="px-6 py-3 text-center border-r border-slate-200 dark:border-slate-700 last:border-r-0">
+                                               <div className="flex items-center justify-center cursor-pointer group" onClick={() => handleSort(header.key)}>
+                                                    {header.label}
+                                                    <span className="ml-1.5">{renderSortIcon(header.key)}</span>
+                                                </div>
+                                             </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {sortedData.map(renderRow)}
+                                </tbody>
+                            </table>
+                        </div>
+                        {sortedData.length === 0 && <p className="p-8 text-center text-slate-500 dark:text-slate-400">{t.masterTable.noResults} "{searchTerm}".</p>}
+                    </div>
+                </section>
+            );
+        };
+        
+        const ProtocolsSection = ({ t, onExport }) => {
+            const [activeProtocol, setActiveProtocol] = useState('Top 5 del Autor');
+            const protocol = protocolsData[activeProtocol];
+            const protocolInfo = t.protocols.data[activeProtocol];
+
+            const tableHeaders = [
+                { key: 'agente', label: t.doses.agent },
+                ...t.pillars.data.map((p, i) => ({ key: `p${i+1}`, label: `P${i+1}`}))
+            ];
+            
+            const renderRow = (row) => (
+                <tr key={row.agente} className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <th scope="row" className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{row.agente}</th>
+                    {Array.from({ length: 7 }, (_, i) => i + 1).map(pilarId => (
+                        <td key={pilarId} className="px-6 py-4 text-center">
+                            <ScoreBadge score={row[`p${pilarId}`]} />
+                        </td>
+                    ))}
+                </tr>
+            );
+
+            return (
+                 <section id="protocolos" className="py-16">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.protocols.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.protocols.subtitle}</p>
+                    </div>
+
+                    <div className="flex justify-center mb-8">
+                        <div className="flex flex-wrap justify-center gap-2 bg-slate-200 dark:bg-slate-800 p-1 rounded-lg">
+                            {Object.keys(t.protocols.data).map(key => (
+                                <button
+                                    key={key}
+                                    onClick={() => setActiveProtocol(key)}
+                                    className={`px-4 py-1.5 text-sm font-medium rounded-md transition-colors duration-200 flex items-center gap-2 ${
+                                        activeProtocol === key ? 'bg-sky-500 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-700'
+                                    }`}
+                                >
+                                    {key === "Top 5 del Autor" && <StarIcon className="text-amber-400" />}
+                                    {t.protocols.data[key].name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg p-6">
+                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-4">
+                            <div>
+                                <h3 className="text-2xl font-bold text-slate-900 dark:text-white">{protocolInfo.name}</h3>
+                                <p className="text-slate-600 dark:text-slate-400">{protocolInfo.description}</p>
+                            </div>
+                            <div className="mt-4 md:mt-0 flex flex-col items-start md:items-end">
+                                <span className="text-sm text-slate-500 dark:text-slate-400">{t.protocols.totalScore}</span>
+                                <p className="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-500 to-violet-600">{protocol.total}</p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-lg border border-slate-200 dark:border-slate-700 overflow-hidden">
+                             <div className="overflow-x-auto table-scrollbar">
+                                <table className="w-full min-w-[800px] text-sm text-left text-slate-500 dark:text-slate-400">
+                                    <thead className="text-xs text-slate-700 dark:text-slate-300 uppercase bg-slate-100 dark:bg-slate-800">
+                                        <tr>
+                                            <th scope="col" className="px-6 py-3">
+                                               {t.doses.agent}
+                                            </th>
+                                            {tableHeaders.filter(h => h.key.startsWith('p')).map(header => (
+                                                 <th key={header.key} scope="col" className="px-6 py-3 text-center">
+                                                    {header.label}
+                                                 </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {protocol.rows.map(renderRow)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <div className="mt-4">
+                             <div className="p-4 bg-slate-100 dark:bg-slate-800 rounded-lg">
+                                <h4 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{t.protocols.subtotals}</h4>
+                                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2">
+                                    {Object.entries(protocol.subtotals).map(([key, value]) => {
+                                        const pilarId = parseInt(key.replace('p', ''));
+                                        return (
+                                            <div key={key} className="text-center p-2 bg-white dark:bg-slate-700 rounded-lg">
+                                                <p className="text-xs font-semibold" style={{color: pillarColors[pilarId-1]}}>{t.pillars.data[pilarId-1].shortName}</p>
+                                                <p className="text-xl font-bold text-slate-900 dark:text-white">{value}</p>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                            {protocolInfo.notes && <p className="text-xs text-slate-500 mt-4 italic">* {protocolInfo.notes}</p>}
+                        </div>
+                         <button 
+                            onClick={() => onExport(protocol.rows, `${protocolInfo.name}_protocol`)}
+                            className="mt-6 w-full md:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 text-white font-semibold rounded-lg shadow-md hover:bg-emerald-700 transition-colors"
+                        >
+                            <DownloadIcon />
+                            {t.protocols.export}
+                        </button>
+                    </div>
+                </section>
+            );
+        };
+        
+        const DosesSection = ({t}) => {
+             const tableHeaders = [
+                { key: 'agente', label: t.doses.agent, sortable: false },
+                { key: 'dosis', label: t.doses.dose, sortable: false },
+                { key: 'notas', label: t.doses.notes, sortable: false }
+            ];
+             const renderRow = (row) => (
+                <tr key={row.agente} className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800">
+                    <th scope="row" className="px-6 py-4 font-medium text-slate-900 dark:text-white whitespace-nowrap">{row.agente}</th>
+                    <td className="px-6 py-4">{row.dosis}</td>
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{row.notas}</td>
+                </tr>
+            );
+
+            return (
+                <section id="dosis" className="py-16">
+                    <div className="text-center mb-8">
+                        <h2 className="text-3xl font-bold text-slate-900 dark:text-white">{t.doses.title}</h2>
+                        <p className="mt-2 text-slate-600 dark:text-slate-400">{t.doses.subtitle}</p>
+                    </div>
+                    <div className="bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                       <div className="overflow-x-auto table-scrollbar">
+                            <table className="w-full min-w-[800px] text-sm text-left text-slate-500 dark:text-slate-400">
+                                <thead className="text-xs text-slate-700 dark:text-slate-300 uppercase bg-slate-100 dark:bg-slate-800">
+                                    <tr>
+                                        {tableHeaders.map(header => (
+                                            <th key={header.key} scope="col" className="px-6 py-3">
+                                                {header.label}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {dosesData.sort((a, b) => a.agente.localeCompare(b.agente)).map(renderRow)}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </section>
+            );
+        };
+        
+        const Footer = ({t}) => (
+            <footer className="border-t border-slate-200 dark:border-slate-800 mt-16">
+                <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-slate-600 dark:text-slate-500 text-sm">
+                       <p>{t.footer.copyright} {new Date().getFullYear()} {t.appName}.</p>
+                </div>
+            </footer>
+        );
+
+        const EmailGateModal = ({ isOpen, onClose, onConfirm, t }) => {
+            if (!isOpen) return null;
+            const [email, setEmail] = useState('');
+
+            const handleSubmit = (e) => {
+                e.preventDefault();
+                if (email && email.includes('@')) {
+                    onConfirm(email);
+                } else {
+                    // Reemplazar alert con un método más amigable en un futuro
+                    console.error(t.modal.alert); 
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow-xl p-8 max-w-md w-full">
+                        <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">{t.modal.title}</h2>
+                        <p className="text-slate-600 dark:text-slate-400 mb-6">{t.modal.subtitle}</p>
+                        <form onSubmit={handleSubmit}>
+                            <input
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder={t.modal.placeholder}
+                                className="w-full bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-white rounded-lg p-3 mb-4 focus:ring-sky-500 focus:border-sky-500"
+                                required
+                            />
+                             <label className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400 mb-6">
+                                <input type="checkbox" required className="rounded bg-slate-200 dark:bg-slate-700 border-slate-400 dark:border-slate-600 text-sky-500 focus:ring-sky-500"/>
+                                <span>{t.modal.consent}</span>
+                            </label>
+                            <div className="flex justify-end gap-4">
+                                <button type="button" onClick={onClose} className="px-5 py-2.5 bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-300 font-semibold rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors">
+                                    {t.modal.cancel}
+                                </button>
+                                <button type="submit" className="px-5 py-2.5 bg-sky-500 text-white font-semibold rounded-lg hover:bg-sky-600 transition-colors">
+                                    {t.modal.download}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            );
+        };
+
+
+        // --- COMPONENTE PRINCIPAL ---
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('Inicio');
+            const [isModalOpen, setIsModalOpen] = useState(false);
+            const [dataToExport, setDataToExport] = useState(null);
+            const [exportFilename, setExportFilename] = useState('longevity_data');
+            const [lang, setLang] = useState('es');
+            const [theme, setTheme] = useState('dark');
+
+            const t = i18nData[lang];
+
+            useEffect(() => {
+                document.documentElement.lang = lang;
+                const esTabs = i18nData.es.tabs;
+                const currentLangTabs = i18nData[lang].tabs;
+                const activeTabIndex = esTabs.indexOf(i18nData.es.tabs.find(tab => i18nData.en.tabs[esTabs.indexOf(tab)] === activeTab || tab === activeTab));
+                
+                if(activeTabIndex !== -1) {
+                    setActiveTab(currentLangTabs[activeTabIndex]);
+                } else {
+                    setActiveTab(currentLangTabs[0]);
+                }
+            }, [lang]);
+
+            useEffect(() => {
+                const root = document.documentElement;
+                if (theme === 'light') {
+                    root.classList.remove('dark');
+                    root.classList.add('light');
+                } else {
+                    root.classList.remove('light');
+                    root.classList.add('dark');
+                }
+            }, [theme]);
+
+
+            const exportToCsv = (data, filename) => {
+                const headers = Object.keys(data[0]);
+                const csvRows = [
+                    headers.join(','),
+                    ...data.map(row => 
+                        headers.map(header => JSON.stringify(row[header])).join(',')
+                    )
+                ];
+                const csvString = csvRows.join('\n');
+                const blob = new Blob([csvString], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.setAttribute('hidden', '');
+                a.setAttribute('href', url);
+                a.setAttribute('download', `${filename}.csv`);
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+            };
+
+            const handleExportRequest = (data, filename = 'longevity_master_table') => {
+                setDataToExport(data);
+                setExportFilename(filename);
+                setIsModalOpen(true);
+            };
+
+            const handleModalConfirm = (email) => {
+                console.log(`Email captured for lead gen: ${email}`);
+                if (dataToExport) {
+                    exportToCsv(dataToExport, exportFilename);
+                }
+                setIsModalOpen(false);
+                setDataToExport(null);
+            };
+
+            const renderContent = () => {
+                const tabMap = {
+                    [t.tabs[0]]: <Hero t={t} onExplore={() => setActiveTab(t.tabs[1])} onOpenTable={() => setActiveTab(t.tabs[5])} />,
+                    [t.tabs[1]]: <PillarsSection t={t} lang={lang} />,
+                    [t.tabs[2]]: <InsightsSection t={t} lang={lang} />,
+                    [t.tabs[3]]: <LifestyleSection t={t} lang={lang} />,
+                    [t.tabs[4]]: <AgentsSection t={t} lang={lang} />,
+                    [t.tabs[5]]: <MasterTableSection t={t} onExport={handleExportRequest} />,
+                    [t.tabs[6]]: <ProtocolsSection t={t} onExport={handleExportRequest} />,
+                    [t.tabs[7]]: <GlossarySection t={t} lang={lang} />,
+                    [t.tabs[8]]: <DosesSection t={t}/>,
+                    [t.tabs[9]]: <QuestionnaireSection t={t} lang={lang} />
+                };
+                return tabMap[activeTab] || tabMap[t.tabs[0]];
+            };
+
+            return (
+                <div className="min-h-screen">
+                    <Header activeTab={activeTab} setActiveTab={setActiveTab} t={t} lang={lang} setLang={setLang} theme={theme} setTheme={setTheme}/>
+                    <main className="container mx-auto px-4 sm:px-6 lg:px-8">
+                        {renderContent()}
+                    </main>
+                    <Footer t={t}/>
+                    <EmailGateModal 
+                        isOpen={isModalOpen} 
+                        onClose={() => setIsModalOpen(false)}
+                        onConfirm={handleModalConfirm}
+                        t={t}
+                    />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
+
