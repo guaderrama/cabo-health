@@ -1,0 +1,447 @@
+<!-- INICIO: Contenedor y Script de Redimensión Automática -->
+<div id="peptide-protocol-container">
+    <iframe
+        id="peptide-protocol-iframe"
+        srcdoc="
+            <!DOCTYPE html>
+            <html lang='es'>
+            <head>
+                <meta charset='UTF-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <title>Peptide Protocol Builder</title>
+                <!-- 1. Carga de Dependencias -->
+                <script src='https://unpkg.com/react@17/umd/react.production.min.js' crossorigin></script>
+                <script src='https://unpkg.com/react-dom@17/umd/react-dom.production.min.js' crossorigin></script>
+                <script src='https://unpkg.com/@babel/standalone/babel.min.js'></script>
+                <script src='https://cdn.tailwindcss.com'></script>
+                <!-- Dependencias para PDF se cargarán dinámicamente -->
+                <style>
+                    html { scroll-behavior: smooth; }
+                    body { font-family: sans-serif; margin: 0; overflow: hidden; /* Evita doble scroll */ }
+                    @keyframes fade-in { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+                    .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+                    
+                    /* --- ESTILOS EXCLUSIVOS PARA EL PDF --- */
+                    .pdf-preview-container { font-family: Arial, sans-serif; color: #333; }
+                    .pdf-header { display: flex; justify-content: space-between; align-items: flex-start; padding-bottom: 1rem; border-bottom: 2px solid #00aef0; margin-bottom: 1.5rem; }
+                    .pdf-logo-container { display: flex; align-items: center; }
+                    .pdf-logo { height: 50px; margin-right: 1rem; }
+                    .pdf-clinic-info h1 { font-size: 24px; font-weight: bold; color: #1a2a4c; margin: 0; }
+                    .pdf-clinic-info p { font-size: 12px; color: #555; margin: 0; }
+                    .pdf-client-info { text-align: right; font-size: 11px; line-height: 1.6; }
+                    .pdf-client-info span { font-weight: bold; color: #1a2a4c; }
+                    .pdf-table { width: 100%; border-collapse: collapse; font-size: 10px; }
+                    .pdf-table th, .pdf-table td { padding: 8px 10px; border: 1px solid #e2e8f0; text-align: left; }
+                    .pdf-table th { background-color: #f1f5f9; font-weight: bold; color: #1a2a4c; text-transform: uppercase; font-size: 9px; }
+                    .pdf-table tbody tr:nth-child(even) { background-color: #f8fafc; }
+                    .pdf-table .text-center { text-align: center; }
+                    .pdf-table .font-bold { font-weight: bold; }
+                    .pdf-table .text-cyan-700 { color: #0e7490; }
+                    .pdf-note-row td { background-color: #f0f9ff !important; padding: 10px; }
+                    .pdf-note-content { font-style: italic; color: #0369a1; white-space: pre-wrap; }
+                    .pdf-footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #cbd5e1; text-align: center; font-size: 10px; color: #64748b; }
+                </style>
+            </head>
+            <body>
+                <!-- 2. Contenedor Raíz para la App de React -->
+                <div id='root'></div>
+
+                <!-- 3. Código de la App de React (con tipo text/babel) -->
+                <script type='text/babel'>
+                    const { useState, useMemo, useRef, useCallback, useEffect } = React;
+
+                    // --- ICONS (lucide-react SVGs) ---
+                    const PlusCircle = (props) => (<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;2&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; {...props}><circle cx=&quot;12&quot; cy=&quot;12&quot; r=&quot;10&quot; /><path d=&quot;M8 12h8&quot; /><path d=&quot;M12 8v8&quot; /></svg>);
+                    const FileText = (props) => (<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;2&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; {...props}><path d=&quot;M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z&quot; /><polyline points=&quot;14 2 14 8 20 8&quot; /><line x1=&quot;16&quot; y1=&quot;13&quot; x2=&quot;8&quot; y2=&quot;13&quot; /><line x1=&quot;16&quot; y1=&quot;17&quot; x2=&quot;8&quot; y2=&quot;17&quot; /><line x1=&quot;10&quot; y1=&quot;9&quot; x2=&quot;8&quot; y2=&quot;9&quot; /></svg>);
+                    const X = (props) => (<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;2&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; {...props}><line x1=&quot;18&quot; y1=&quot;6&quot; x2=&quot;6&quot; y2=&quot;18&quot;></line><line x1=&quot;6&quot; y1=&quot;6&quot; x2=&quot;18&quot; y2=&quot;18&quot;></line></svg>);
+                    const Download = (props) => (<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;2&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; {...props}><path d=&quot;M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4&quot; /><polyline points=&quot;7 10 12 15 17 10&quot; /><line x1=&quot;12&quot; x2=&quot;12&quot; y1=&quot;15&quot; y2=&quot;3&quot; /></svg>);
+                    const Languages = (props) => (<svg xmlns=&quot;http://www.w3.org/2000/svg&quot; width=&quot;24&quot; height=&quot;24&quot; viewBox=&quot;0 0 24 24&quot; fill=&quot;none&quot; stroke=&quot;currentColor&quot; strokeWidth=&quot;2&quot; strokeLinecap=&quot;round&quot; strokeLinejoin=&quot;round&quot; {...props}><path d=&quot;m5 8 6 6&quot; /><path d=&quot;m4 14 6-6 2-3&quot; /><path d=&quot;M2 5h12&quot; /><path d=&quot;M7 2h1&quot; /><path d=&quot;m22 22-5-10-5 10&quot; /><path d=&quot;M14 18h6&quot; /></svg>);
+                    const LOGO_BASE64 = &quot;data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARAAAACcCAMAAACc804DAAAAUVBMVEX///8AAAD29vby8vL39/f09PT5+fn6+vrz8/P8/Pzx8fH9/f3u7u7t7e3w8PDs7Ozn5+fp6enos7O3t7fd3d3l5eXj4+Pe3t7Z2dnPz8+fn59dYp7dAAABMUlEQVR4nO3PMRGAIAwEsTdI6/8yGgHFAlFmZzcAAAAAAAAA8Jzm1/Y8S04DoBsAAAAAAGiK7Z9r5k4DAAAAAAAAAAAAAMB1L3sCAAAAAAAAAAAAAMC1L3sDAAAAAAAAAAAAANe97AkAAAAAAAAAAAAA4NqXvQEAAAAAAAAAAAAA3Pa97AsAAAAAAAAAAAAA4Nr3vQIAAAAAAAAAAAAAuPb97gEAAAAAAAAAAACAb+77XgYAAAAAAAAAAAAA8I3+vQsAAAAAAAAAAAAA+Ea/7wEAAAAAAAAAAACAb/T7HgAAAAAAAAAAAAD4Rr/vAQAAAAAAAAAAAIBv9PseAAAAAAAAAAAAAPCN/r0LAAAAAAAAAAAAAPhGv+8BAAAAAAAAAAAAAGD+d9gAAAAAAAAAAADAH7sDAAAAAAAAAAAAAGD2dwYAAAAAAAAAAACA2d8ZAAAAAAAAAAAAADD7uwMAAAAAAAAAAAAAZn+3AAAAAAAAAAAAAMA8/x4AAAAAAAAAAAD4T78BAAAAAAAAAAAAAPzpfwYAAAAAAAAAAAD86d8EAAAAAAAAAAAAAPzp3wQAAAAAAAAAAACAvwEA/eADCS50CAAAAABJRU5ErkJggg==&quot;;
+                    const PEPTIDE_DATASET = [ /* ... El mismo dataset ... */ 
+                        {id: &quot;ipamorelin&quot;, name: &quot;Ipamorelin&quot;, kind: &quot;peptide&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [10], bacWaterMl: 3, recommendedDose: [300], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;tesamorelin&quot;, name: &quot;Tesamorelin&quot;, kind: &quot;peptide&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [1], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;aod-9604&quot;, name: &quot;AOD-9604&quot;, kind: &quot;peptide&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [5], bacWaterMl: 2, recommendedDose: [300], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;semaglutide&quot;, name: &quot;Semaglutide&quot;, kind: &quot;peptide&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [3], bacWaterMl: 2, recommendedDose: [250], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;Once Per Week&quot;, duration: &quot;8 weeks on, 8 weeks off or until goal weight is reached&quot;},
+                        {id: &quot;tirzepatide&quot;, name: &quot;Tirzepatide&quot;, kind: &quot;peptide&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [0.5], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;3x per week&quot;, duration: &quot;8 weeks on, 8 weeks off or until goal weight is reached&quot;},
+                        {id: &quot;retatrutide&quot;, name: &quot;Retatrutide&quot;, kind: &quot;peptide&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [0.5], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;3x per week&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;mots-c&quot;, name: &quot;MOTS-C&quot;, kind: &quot;peptide&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [1], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;cjc-1295-no-dac&quot;, name: &quot;CJC-1295 No DAC&quot;, kind: &quot;peptide&quot;, purpose: &quot;Longevity&quot;, amountInVialMg: [10], bacWaterMl: 3, recommendedDose: [200], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;PM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;epitalon&quot;, name: &quot;Epitalon&quot;, kind: &quot;peptide&quot;, purpose: &quot;Longevity&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;PM&quot;, frequency: &quot;Every day&quot;, duration: &quot;20 days in a row, 3x per year&quot;},
+                        {id: &quot;melanotan-1&quot;, name: &quot;Melanotan 1&quot;, kind: &quot;peptide&quot;, purpose: &quot;Cognitive Enhancement&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [250], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;2 days per week&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;ghk-cu&quot;, name: &quot;GHK-CU&quot;, kind: &quot;peptide&quot;, purpose: &quot;Healing&quot;, amountInVialMg: [50], bacWaterMl: 3, recommendedDose: [1.7], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;Every day&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;thymosin-alpha-1&quot;, name: &quot;Thymosin-Alpha 1&quot;, kind: &quot;peptide&quot;, purpose: &quot;Immunity&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [1.5], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;ll-37&quot;, name: &quot;LL-37&quot;, kind: &quot;peptide&quot;, purpose: &quot;Immunity&quot;, amountInVialMg: [5], bacWaterMl: 2, recommendedDose: [125], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;Every day&quot;, duration: &quot;50 days straight, 4 weeks off&quot;},
+                        {id: &quot;bpc-157&quot;, name: &quot;BPC-157&quot;, kind: &quot;peptide&quot;, purpose: &quot;Healing&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [500], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;Every day&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;tb-500&quot;, name: &quot;TB-500&quot;, kind: &quot;peptide&quot;, purpose: &quot;Healing&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [500], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;Every Day&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;pt-141&quot;, name: &quot;PT-141&quot;, kind: &quot;peptide&quot;, purpose: &quot;Sexual Health&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [500], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;30 minutes before sexual activity&quot;, frequency: &quot;As needed&quot;, duration: &quot;As needed&quot;},
+                        {id: &quot;oxytocin&quot;, name: &quot;Oxytocin&quot;, kind: &quot;peptide&quot;, purpose: &quot;Sexual Health&quot;, amountInVialMg: [10], bacWaterMl: 10, recommendedDose: [50], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;As needed&quot;, duration: &quot;As needed&quot;},
+                        {id: &quot;ss-31&quot;, name: &quot;SS-31&quot;, kind: &quot;peptide&quot;, purpose: &quot;Longevity&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [500], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;igf-1-lr3&quot;, name: &quot;IGF-1 LR3&quot;, kind: &quot;peptide&quot;, purpose: &quot;Muscle Building&quot;, amountInVialMg: [1], bacWaterMl: 1, recommendedDose: [50], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;10 days in a row&quot;, duration: &quot;10 days on, 4 weeks off&quot;},
+                        {id: &quot;dsip&quot;, name: &quot;DSIP&quot;, kind: &quot;peptide&quot;, purpose: &quot;Sleep&quot;, amountInVialMg: [5], bacWaterMl: 2, recommendedDose: [250], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;1-3 hours before bed&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;kisspeptin&quot;, name: &quot;Kisspeptin&quot;, kind: &quot;peptide&quot;, purpose: &quot;Sexual Health&quot;, amountInVialMg: [5], bacWaterMl: 2, recommendedDose: [125], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;1 hour before bed&quot;, frequency: &quot;Every day&quot;, duration: &quot;30 days on, 30 days off&quot;},
+                        {id: &quot;vip&quot;, name: &quot;VIP&quot;, kind: &quot;peptide&quot;, purpose: &quot;Immunity&quot;, amountInVialMg: [5], bacWaterMl: 5, recommendedDose: [50], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;Every day&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;kpv&quot;, name: &quot;KPV&quot;, kind: &quot;peptide&quot;, purpose: &quot;Immunity&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [500], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;nad-plus&quot;, name: &quot;NAD+&quot;, kind: &quot;peptide&quot;, purpose: &quot;Longevity&quot;, amountInVialMg: [500], bacWaterMl: 5, recommendedDose: [100], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;2-3 days per week&quot;, duration: &quot;As needed&quot;},
+                        {id: &quot;semax&quot;, name: &quot;Semax&quot;, kind: &quot;peptide&quot;, purpose: &quot;Cognition&quot;, amountInVialMg: [30], bacWaterMl: 3, recommendedDose: [1], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;2-3 days per week&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;selank&quot;, name: &quot;Selank&quot;, kind: &quot;peptide&quot;, purpose: &quot;Cognition&quot;, amountInVialMg: [30], bacWaterMl: 3, recommendedDose: [1], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;2-3 days per week&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;ara-290&quot;, name: &quot;ARA-290&quot;, kind: &quot;peptide&quot;, purpose: &quot;Healing/Neuropathy&quot;, amountInVialMg: [15], bacWaterMl: 1, recommendedDose: [1.5], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;foxo4-dri&quot;, name: &quot;FOXO4-DRI&quot;, kind: &quot;peptide&quot;, purpose: &quot;Longevity&quot;, amountInVialMg: [10], bacWaterMl: 2, recommendedDose: [1], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;2 weeks, repeat 2-3 times per year&quot;},
+                        {id: &quot;l-carnitine&quot;, name: &quot;L-Carnitine&quot;, kind: &quot;peptide&quot;, purpose: &quot;Muscle Building&quot;, amountInVialMg: [600], bacWaterMl: 1, recommendedDose: [200], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM&quot;, frequency: &quot;Every Day&quot;, duration: &quot;As much as you want or need&quot;},
+                        {id: &quot;cagrilintide&quot;, name: &quot;Cagrilintide&quot;, kind: &quot;peptide&quot;, purpose: &quot;Appetite Suppression&quot;, amountInVialMg: [5], bacWaterMl: 2, recommendedDose: [250], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM&quot;, frequency: &quot;3 days per week&quot;, duration: &quot;8 weeks on, 8 weeks off or as needed for appetite suppression&quot;},
+                        {id: &quot;follistatin-344&quot;, name: &quot;Follistatin 344&quot;, kind: &quot;peptide&quot;, purpose: &quot;Muscle Building&quot;, amountInVialMg: [1], bacWaterMl: 2, recommendedDose: [50], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;30 minutes pre workout IM (intramuscular)&quot;, frequency: &quot;Training Days&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;ipamorelin-cjc-1295-no-dac&quot;, name: &quot;Ipamorelin/CJC-1295 No DAC&quot;, kind: &quot;blend&quot;, purpose: &quot;Fat Loss&quot;, amountInVialMg: [5, 5], bacWaterMl: 2, recommendedDose: [250, 250], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;bpc-157-tb-500&quot;, name: &quot;BPC-157/TB-500&quot;, kind: &quot;blend&quot;, purpose: &quot;Healing&quot;, amountInVialMg: [5, 5], bacWaterMl: 2, recommendedDose: [250, 250], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;Every Day&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;tesamorelin-ipamorelin&quot;, name: &quot;Tesamorelin/Ipamorelin&quot;, kind: &quot;blend&quot;, purpose: &quot;Fat Loss/Muscle Building&quot;, amountInVialMg: [6, 2], bacWaterMl: 2, recommendedDose: [300, 100], recommendedDoseUnit: &quot;mcg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;5 days on, 2 days off&quot;, duration: &quot;8 weeks on, 8 weeks off&quot;},
+                        {id: &quot;bronchogen&quot;, name: &quot;Bronchogen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Lungs&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;cardiogen&quot;, name: &quot;Cardiogen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Heart&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;cartalax&quot;, name: &quot;Cartalax&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Joint Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;chonluten&quot;, name: &quot;Chonluten&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Respiratory Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;cortagen&quot;, name: &quot;Cortagen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Brain Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;livagen&quot;, name: &quot;Livagen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Liver Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;ovagen&quot;, name: &quot;Ovagen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Liver/Stomach Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;pancragen&quot;, name: &quot;Pancragen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Pancreas Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;pinealon&quot;, name: &quot;Pinealon&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Brain Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;prostamax&quot;, name: &quot;Prostamax&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Prostate Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;testagen&quot;, name: &quot;Testagen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Male Hormones&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;thymagen&quot;, name: &quot;Thymagen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Immune Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;vesugen&quot;, name: &quot;Vesugen&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Blood Flow/Vascular Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;vesilute&quot;, name: &quot;Vesilute&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Bladder/Prostate Health&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;},
+                        {id: &quot;vilon&quot;, name: &quot;Vilon&quot;, kind: &quot;bioregulator&quot;, purpose: &quot;Thymus Health/Inflammation&quot;, amountInVialMg: [20], bacWaterMl: 2, recommendedDose: [2], recommendedDoseUnit: &quot;mg&quot;, timing: &quot;AM/PM&quot;, frequency: &quot;30 days in a row&quot;, duration: &quot;1 month on, 2 months off, 2-3x per year&quot;}
+                    ];
+                    const resources = {
+                        es: { translation: { 
+                            title: &quot;Creador de Protocolos de Péptidos&quot;, subtitle: &quot;Tablas profesionales con dosis en mg, mcg y unidades — exporta a PDF.&quot;, createProtocol: &quot;Protocolo del Cliente&quot;, disclaimer: &quot;&quot;,
+                            exportPdf: &quot;Exportar a PDF&quot;, exporting: &quot;Exportando...&quot;, addPeptide: &quot;Añadir Péptido&quot;, addManual: &quot;Añadir Manualmente&quot;, addNote: &quot;Añadir Nota&quot;, remove: &quot;Quitar&quot;,
+                            cancel: &quot;Cancelar&quot;, addToProtocol: &quot;Añadir al Protocolo&quot;, clientInfo: &quot;Información del Cliente (Opcional)&quot;, clientName: &quot;Nombre del Cliente&quot;, clientEmail: &quot;Email del Cliente&quot;,
+                            clientWeight: &quot;Peso del Cliente (kg)&quot;, protocolDate: &quot;Fecha del Protocolo&quot;, product: &quot;Producto&quot;, name: &quot;Nombre&quot;, purpose: &quot;Propósito&quot;, vialAmount: &quot;Cantidad en Vial (mg)&quot;,
+                            bacWater: &quot;Agua BAC (mL)&quot;, dose: &quot;Dosis&quot;, units: &quot;Unidades (U)&quot;, timing: &quot;Timing&quot;, frequency: &quot;Frecuencia&quot;, duration: &quot;Duración&quot;, notes: &quot;Notas&quot;, actions: &quot;Acciones&quot;,
+                            selectPeptide: &quot;Selecciona un péptido...&quot;, manualPeptideName: &quot;Datos del Nuevo Péptido&quot;, notePlaceholder: &quot;Escribe tu nota aquí...&quot;, example: &quot;Ej.&quot;, website: &quot;Sitio Web&quot;,
+                            &quot;Fat Loss&quot;: &quot;Pérdida de Grasa&quot;, &quot;Healing&quot;: &quot;Recuperación&quot;, &quot;Longevity&quot;: &quot;Longevidad&quot;, &quot;Immunity&quot;: &quot;Inmunidad&quot;, &quot;Cognitive Enhancement&quot;: &quot;Mejora Cognitiva&quot;,
+                            &quot;Sexual Health&quot;: &quot;Salud Sexual&quot;, &quot;Muscle Building&quot;: &quot;Desarrollo Muscular&quot;, &quot;Sleep&quot;: &quot;Sueño&quot;, &quot;Cognition&quot;: &quot;Cognición&quot;, &quot;Healing/Neuropathy&quot;: &quot;Recuperación/Neuropatía&quot;,
+                            &quot;Appetite Suppression&quot;: &quot;Supresión del Apetito&quot;, &quot;Fat Loss/Muscle Building&quot;: &quot;Pérdida de Grasa/Desarrollo Muscular&quot;, &quot;Lungs&quot;: &quot;Pulmones&quot;, &quot;Heart&quot;: &quot;Corazón&quot;,
+                            &quot;Joint Health&quot;: &quot;Salud Articular&quot;, &quot;Respiratory Health&quot;: &quot;Salud Respiratoria&quot;, &quot;Brain Health&quot;: &quot;Salud Cerebral&quot;, &quot;Liver Health&quot;: &quot;Salud Hepática&quot;,
+                            &quot;Liver/Stomach Health&quot;: &quot;Salud Hepática/Estomacal&quot;, &quot;Pancreas Health&quot;: &quot;Salud del Páncreas&quot;, &quot;Prostate Health&quot;: &quot;Salud de la Próstata&quot;, &quot;Male Hormones&quot;: &quot;Hormonas Masculinas&quot;,
+                            &quot;Immune Health&quot;: &quot;Salud Inmune&quot;, &quot;Blood Flow/Vascular Health&quot;: &quot;Flujo Sanguíneo/Salud Vascular&quot;, &quot;Bladder/Prostate Health&quot;: &quot;Salud de Vejiga/Próstata&quot;,
+                            &quot;Thymus Health/Inflammation&quot;: &quot;Salud del Timo/Inflamación&quot;
+                         }},
+                        en: { translation: {
+                            title: &quot;Peptide Protocol Builder&quot;, subtitle: &quot;Professional tables with doses in mg, mcg and syringe units — export to PDF.&quot;, createProtocol: &quot;Client's Protocol&quot;, disclaimer: &quot;&quot;,
+                            exportPdf: &quot;Export to PDF&quot;, exporting: &quot;Exporting...&quot;, addPeptide: &quot;Add Peptide&quot;, addManual: &quot;Add Manually&quot;, addNote: &quot;Add Note&quot;, remove: &quot;Remove&quot;,
+                            cancel: &quot;Cancel&quot;, addToProtocol: &quot;Add to Protocol&quot;, clientInfo: &quot;Client Information (Optional)&quot;, clientName: &quot;Client's Name&quot;, clientEmail: &quot;Client's Email&quot;,
+                            clientWeight: &quot;Client's Weight (kg)&quot;, protocolDate: &quot;Protocol Date&quot;, product: &quot;Product&quot;, name: &quot;Name&quot;, purpose: &quot;Purpose&quot;, vialAmount: &quot;Amount in Vial (mg)&quot;,
+                            bacWater: &quot;BAC Water (mL)&quot;, dose: &quot;Dose&quot;, units: &quot;Syringe Units (U)&quot;, timing: &quot;Timing&quot;, frequency: &quot;Frequency&quot;, duration: &quot;Duration&quot;, notes: &quot;Notes&quot;, actions: &quot;Actions&quot;,
+                            selectPeptide: &quot;Select a peptide...&quot;, manualPeptideName: &quot;New Peptide Details&quot;, notePlaceholder: &quot;Write your note here...&quot;, example: &quot;e.g.&quot;, website: &quot;Website&quot;,
+                            &quot;Fat Loss&quot;: &quot;Fat Loss&quot;, &quot;Healing&quot;: &quot;Healing&quot;, &quot;Longevity&quot;: &quot;Longevity&quot;, &quot;Immunity&quot;: &quot;Immunity&quot;, &quot;Cognitive Enhancement&quot;: &quot;Cognitive Enhancement&quot;,
+                            &quot;Sexual Health&quot;: &quot;Sexual Health&quot;, &quot;Muscle Building&quot;: &quot;Muscle Building&quot;, &quot;Sleep&quot;: &quot;Sleep&quot;, &quot;Cognition&quot;: &quot;Cognition&quot;, &quot;Healing/Neuropathy&quot;: &quot;Healing/Neuropathy&quot;,
+                            &quot;Appetite Suppression&quot;: &quot;Appetite Suppression&quot;, &quot;Fat Loss/Muscle Building&quot;: &quot;Fat Loss/Muscle Building&quot;, &quot;Lungs&quot;: &quot;Lungs&quot;, &quot;Heart&quot;: &quot;Heart&quot;,
+                            &quot;Joint Health&quot;: &quot;Joint Health&quot;, &quot;Respiratory Health&quot;: &quot;Respiratory Health&quot;, &quot;Brain Health&quot;: &quot;Brain Health&quot;, &quot;Liver Health&quot;: &quot;Liver Health&quot;,
+                            &quot;Liver/Stomach Health&quot;: &quot;Liver/Stomach Health&quot;, &quot;Pancreas Health&quot;: &quot;Pancreas Health&quot;, &quot;Prostate Health&quot;: &quot;Prostate Health&quot;, &quot;Male Hormones&quot;: &quot;Male Hormones&quot;,
+                            &quot;Immune Health&quot;: &quot;Immune Health&quot;, &quot;Blood Flow/Vascular Health&quot;: &quot;Blood Flow/Vascular Health&quot;, &quot;Bladder/Prostate Health&quot;: &quot;Bladder/Prostate Health&quot;,
+                            &quot;Thymus Health/Inflammation&quot;: &quot;Thymus Health/Inflammation&quot;
+                         }}
+                    };
+                    const MG_TO_MCG = 1000; const toMcg = (vMg) => vMg * MG_TO_MCG; const toMg = (vMcg) => vMcg / MG_TO_MCG;
+                    const computeUnits = (vialMg, bacMl, doseValue, doseUnit) => {
+                        if (!vialMg || vialMg.length === 0 || !bacMl || !doseValue || doseValue.length === 0 || bacMl <= 0) { return { units: Array(vialMg?.length || 1).fill(0), volumeMl: Array(vialMg?.length || 1).fill(0) }; }
+                        const doseMcg = doseValue.map(d => doseUnit === 'mg' ? toMcg(d) : d);
+                        const results = vialMg.map((mg, i) => {
+                            if (mg <= 0) return { units: 0, volumeMl: 0 };
+                            const mcgPerMl = (mg * MG_TO_MCG) / bacMl;
+                            if (mcgPerMl === 0) return { units: 0, volumeMl: 0 };
+                            const vol = (parseFloat(doseMcg[i]) || 0) / mcgPerMl;
+                            const units = +(vol * 100).toFixed(1);
+                            return { units, volumeMl: +vol.toFixed(3) };
+                        });
+                        return results.reduce((acc, v) => ({ units: [...acc.units, v.units], volumeMl: [...acc.volumeMl, v.volumeMl] }), { units: [], volumeMl: [] });
+                    };
+
+                    function App() {
+                        const [language, setLanguage] = useState('es');
+                        const [clientInfo, setClientInfo] = useState({ name: '', email: '', weight: '', date: new Date().toISOString().split('T')[0] });
+                        const [protocolItems, setProtocolItems] = useState([]);
+                        const [isAdding, setIsAdding] = useState(false);
+                        const [newItem, setNewItem] = useState(null);
+                        const [isExporting, setIsExporting] = useState(false);
+                        const [scriptsLoaded, setScriptsLoaded] = useState(false);
+                        const pdfPrintRef = useRef();
+
+                        useEffect(() => {
+                            const loadScript = (src) => {
+                                return new Promise((resolve, reject) => {
+                                    if (document.querySelector(`script[src=&quot;${src}&quot;]`)) return resolve();
+                                    const script = document.createElement('script'); script.src = src; script.onload = () => resolve(); script.onerror = () => reject(new Error(`Script load error for ${src}`)); document.head.appendChild(script);
+                                });
+                            };
+                            if (typeof html2canvas !== 'undefined' && typeof window.jspdf !== 'undefined') { setScriptsLoaded(true); return; }
+                            Promise.all([
+                                loadScript(&quot;https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js&quot;),
+                                loadScript(&quot;https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js&quot;)
+                            ]).then(() => setScriptsLoaded(true)).catch(console.error);
+                        }, []);
+
+                        const uniquePurposes = useMemo(() => [...new Set(PEPTIDE_DATASET.map(p => p.purpose).filter(Boolean))], []);
+                        const uniqueTimings = useMemo(() => [...new Set(PEPTIDE_DATASET.map(p => p.timing).filter(Boolean))], []);
+                        const uniqueFrequencies = useMemo(() => [...new Set(PEPTIDE_DATASET.map(p => p.frequency).filter(Boolean))], []);
+                        const uniqueDurations = useMemo(() => [...new Set(PEPTIDE_DATASET.map(p => p.duration).filter(Boolean))], []);
+                        const t = useCallback((key) => resources[language].translation[key] || key, [language]);
+                        const tPurpose = useCallback((purpose) => resources[language].translation[purpose] || purpose, [language]);
+                        const handleClientInfoChange = (e) => { const { name, value } = e.target; setClientInfo(prev => ({ ...prev, [name]: value })); };
+
+                        const handleStartAdding = (peptideId = null) => {
+                            if (protocolItems.length >= 5) return;
+                            let item;
+                            if (peptideId) {
+                                const peptide = PEPTIDE_DATASET.find(p => p.id === peptideId);
+                                item = { type: 'peptide', isManual: false, productId: peptide.id, ...peptide, amountInVialMg: [...peptide.amountInVialMg], chosenDose: [...peptide.recommendedDose], chosenDoseUnit: peptide.recommendedDoseUnit, chosenBacWaterMl: peptide.bacWaterMl };
+                            } else {
+                                item = { type: 'peptide', isManual: true, productId: null, name: '', purpose: '', amountInVialMg: [''], chosenBacWaterMl: 1, chosenDose: [''], chosenDoseUnit: 'mcg', timing: '', frequency: '', duration: '', notes: '' };
+                            }
+                            setNewItem(item); setIsAdding(true);
+                        };
+                        
+                        const handleUpdateNewItem = (field, value, index = null) => {
+                             setNewItem(prevItem => {
+                                const draft = { ...prevItem };
+                                if (field === 'amountInVialMg' || field === 'chosenDose') {
+                                    const newArray = [...draft[field]]; newArray[index] = value; draft[field] = newArray;
+                                } else if (field === 'chosenDoseUnit') {
+                                    const oldUnit = prevItem.chosenDoseUnit; const newUnit = value; draft.chosenDoseUnit = newUnit;
+                                    if (oldUnit !== newUnit) {
+                                        draft.chosenDose = prevItem.chosenDose.map(dose => {
+                                            const numDose = parseFloat(dose); if (isNaN(numDose)) return '';
+                                            return oldUnit === 'mcg' ? toMg(numDose) : toMcg(numDose);
+                                        });
+                                    }
+                                } else { draft[field] = value; }
+                                return draft;
+                            });
+                        };
+                        
+                        const handleCancelAdding = () => { setIsAdding(false); setNewItem(null); };
+                        const handleCommitNewItem = () => { if (newItem) { setProtocolItems(prev => [...prev, { ...newItem, uniqueId: Date.now() }]); handleCancelAdding(); } };
+                        const handleAddNote = () => { if (protocolItems.length >= 5) return; setProtocolItems(prev => [...prev, { type: 'note', uniqueId: Date.now(), content: '' }]); };
+                        const updateProtocolItemInList = (uniqueId, newContent) => { setProtocolItems(prevItems => prevItems.map(item => item.uniqueId === uniqueId ? { ...item, content: newContent } : item)); };
+                        const removeProtocolItem = (uniqueId) => { setProtocolItems(prev => prev.filter(item => item.uniqueId !== uniqueId)); };
+
+                        const handleExportPdf = async () => { 
+                            if (!scriptsLoaded || typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') return;
+                            setIsExporting(true);
+                            const { jsPDF } = window.jspdf;
+                            const element = pdfPrintRef.current;
+                            if (!element) { setIsExporting(false); return; };
+                            
+                            try {
+                                const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+                                const imgData = canvas.toDataURL('image/png');
+                                const pdf = new jsPDF('l', 'mm', 'a4'); 
+                                const pdfWidth = pdf.internal.pageSize.getWidth();
+                                const pdfHeight = pdf.internal.pageSize.getHeight();
+                                const canvasProps = pdf.getImageProperties(imgData);
+                                const canvasRatio = canvasProps.height / canvasProps.width;
+                                let imgWidth = pdfWidth - 20; 
+                                let imgHeight = imgWidth * canvasRatio;
+                                if (imgHeight > pdfHeight - 20) { imgHeight = pdfHeight - 20; imgWidth = imgHeight / canvasRatio; }
+                                const x = (pdfWidth - imgWidth) / 2;
+                                const y = (pdfHeight - imgHeight) / 2;
+                                pdf.addImage(imgData, 'PNG', x, y, imgWidth, imgHeight);
+                                pdf.save(`protocolo-${clientInfo.name || 'cliente'}-${clientInfo.date}.pdf`);
+                            } catch (error) { console.error(&quot;Error exporting PDF:&quot;, error);
+                            } finally { setIsExporting(false); }
+                        };
+                        
+                        return (
+                             <div className=&quot;bg-slate-50 font-sans text-slate-800 min-h-screen&quot;>
+                                 <div className=&quot;container mx-auto p-4 md:p-8&quot;>
+                                    <header className=&quot;flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8&quot;>
+                                        <div className=&quot;flex items-center space-x-4 mb-4 sm:mb-0&quot;>
+                                            <img src={LOGO_BASE64} alt=&quot;Cabo Health Logo&quot; className=&quot;h-12&quot; />
+                                            <div>
+                                                <h1 className=&quot;text-2xl md:text-3xl font-bold text-slate-900&quot;>{t('title')}</h1>
+                                                <p className=&quot;text-slate-500&quot;>{t('subtitle')}</p>
+                                            </div>
+                                        </div>
+                                        <button onClick={() => setLanguage(lang => lang === 'es' ? 'en' : 'es')} className=&quot;flex items-center space-x-2 px-4 py-2 bg-white border border-slate-300 rounded-md shadow-sm text-sm font-medium hover:bg-slate-100 transition-colors&quot;>
+                                            <Languages className=&quot;w-5 h-5 text-slate-600&quot;/>
+                                            <span>{language === 'es' ? 'English' : 'Español'}</span>
+                                        </button>
+                                    </header>
+
+                                    <main className=&quot;space-y-10&quot;>
+                                        <div className=&quot;bg-white p-6 rounded-lg shadow-sm border border-slate-200&quot;>
+                                            <h2 className=&quot;text-lg font-semibold mb-4&quot;>{t('clientInfo')}</h2>
+                                            <div className=&quot;grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4&quot;>
+                                                <InputField label={t('clientName')} name=&quot;name&quot; value={clientInfo.name} onChange={handleClientInfoChange} />
+                                                <InputField label={t('protocolDate')} name=&quot;date&quot; type=&quot;date&quot; value={clientInfo.date} onChange={handleClientInfoChange} />
+                                                <InputField label={t('clientEmail')} name=&quot;email&quot; type=&quot;email&quot; value={clientInfo.email} onChange={handleClientInfoChange} placeholder={`${t('example')} client@email.com`}/>
+                                                <InputField label={t('clientWeight')} name=&quot;weight&quot; type=&quot;number&quot; value={clientInfo.weight} onChange={handleClientInfoChange} placeholder={`${t('example')} 75`}/>
+                                            </div>
+                                        </div>
+                                        <div className=&quot;space-y-4&quot;>
+                                            {!isAdding && protocolItems.length < 5 && (
+                                                <div className=&quot;flex flex-wrap gap-4 items-center p-4 bg-slate-100 rounded-lg border border-slate-200&quot;>
+                                                    <PeptideSelector onAdd={handleStartAdding} t={t} />
+                                                    <button onClick={() => handleStartAdding(null)} className=&quot;flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-slate-800 text-white rounded-md hover:bg-slate-700 transition-colors shadow-sm&quot;>
+                                                        <PlusCircle className=&quot;w-5 h-5&quot;/> {t('addManual')}
+                                                    </button>
+                                                    <button onClick={handleAddNote} className=&quot;flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold bg-slate-600 text-white rounded-md hover:bg-slate-500 transition-colors shadow-sm&quot;>
+                                                        <FileText className=&quot;w-5 h-5&quot;/> {t('addNote')}
+                                                    </button>
+                                                </div>
+                                            )}
+                                            {isAdding && newItem && (
+                                                <NewItemForm item={newItem} t={t} tPurpose={tPurpose} onUpdate={handleUpdateNewItem} onSave={handleCommitNewItem} onCancel={handleCancelAdding} uniquePurposes={uniquePurposes} uniqueTimings={uniqueTimings} uniqueFrequencies={uniqueFrequencies} uniqueDurations={uniqueDurations} />
+                                            )}
+                                        </div>
+                                    </main>
+                                    
+                                    {protocolItems.length > 0 && (
+                                        <div className=&quot;mt-12&quot;>
+                                            <div className=&quot;flex justify-between items-center mb-4&quot;>
+                                                <h2 className=&quot;text-xl font-bold text-slate-900&quot;>{t('createProtocol')}</h2>
+                                                <button onClick={handleExportPdf} disabled={isExporting || !scriptsLoaded} className=&quot;flex items-center justify-center gap-2 w-40 px-4 py-2 font-semibold bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition-colors shadow-sm disabled:bg-cyan-400 disabled:cursor-not-allowed&quot; title={!scriptsLoaded ? &quot;Loading PDF libraries...&quot; : &quot;Export to PDF&quot;}>
+                                                    {isExporting ? <div className=&quot;animate-spin rounded-full h-5 w-5 border-b-2 border-white&quot;></div> : <Download className=&quot;w-5 h-5&quot;/>}
+                                                    {isExporting ? t('exporting') : t('exportPdf')}
+                                                </button>
+                                            </div>
+                                            <div className=&quot;bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden&quot;>
+                                                <ProtocolTable protocolItems={protocolItems} t={t} tPurpose={tPurpose} onRemove={removeProtocolItem} onUpdate={updateProtocolItemInList} />
+                                            </div>
+                                        </div>
+                                    )}
+                                    <footer className=&quot;mt-12 text-center text-xs text-slate-500 p-4 border-t border-slate-200&quot;>
+                                        <p>Instagram: @cabo_health</p>
+                                    </footer>
+                                    <div className=&quot;absolute -z-10 -left-[9999px] top-0 opacity-0&quot;>
+                                        <div id=&quot;pdf-preview-container&quot; ref={pdfPrintRef} style={{width: '1122px'}}>
+                                            <PDFPreviewLayout language={language} protocolItems={protocolItems} clientInfo={clientInfo} t={t} tPurpose={tPurpose} />
+                                        </div>
+                                    </div>
+                                </div>
+                        </div>);
+                    }
+
+                    const InputField = ({ label, ...props }) => (<div><label className=&quot;block text-sm font-medium text-slate-600 mb-1&quot;>{label}</label><input {...props} className=&quot;w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm&quot; /></div>);
+
+                    const PeptideSelector = ({ onAdd, t }) => {
+                        const [selectedValue, setSelectedValue] = useState('');
+                        const handleAdd = () => { if (selectedValue) { onAdd(selectedValue); setSelectedValue(''); } };
+                        return (
+                            <div className=&quot;flex items-center gap-2&quot;>
+                                <select value={selectedValue} onChange={(e) => setSelectedValue(e.target.value)} className=&quot;block w-48 px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 sm:text-sm&quot;>
+                                    <option value=&quot;&quot; disabled>{t('selectPeptide')}</option>
+                                    {PEPTIDE_DATASET.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                                <button onClick={handleAdd} disabled={!selectedValue} className=&quot;flex items-center justify-center gap-2 px-4 py-2 font-semibold bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition-colors shadow-sm disabled:bg-cyan-400 disabled:cursor-not-allowed&quot;><PlusCircle className=&quot;w-5 h-5&quot;/> {t('addPeptide')}</button>
+                            </div>
+                        );
+                    };
+
+                    const NewItemForm = ({ item, t, tPurpose, onUpdate, onSave, onCancel, uniquePurposes, uniqueTimings, uniqueFrequencies, uniqueDurations }) => {
+                        const calculated = useMemo(() => computeUnits(item.amountInVialMg, item.chosenBacWaterMl, item.chosenDose, item.chosenDoseUnit), [item.amountInVialMg, item.chosenBacWaterMl, item.chosenDose, item.chosenDoseUnit]);
+                        const handleNumericArrayChange = (field, value, index) => { onUpdate(field, value, index); };
+                        const addBlendComponent = () => { if(item.isManual) { onUpdate('amountInVialMg', [...item.amountInVialMg, '']); onUpdate('chosenDose', [...item.chosenDose, '']); } };
+                        return (
+                            <div className=&quot;bg-white p-4 rounded-lg shadow-lg border border-slate-200 relative animate-fade-in&quot;>
+                                <div className=&quot;grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-6 gap-y-4&quot;>
+                                    <div className=&quot;space-y-3&quot;>
+                                        <h3 className=&quot;font-bold text-lg text-slate-800&quot;>{item.isManual ? t('manualPeptideName') : item.name}</h3>
+                                        {item.isManual ? (<InputField label={t('name')} value={item.name} onChange={e => onUpdate('name', e.target.value)} />) : (<p className=&quot;text-sm text-slate-500&quot;>{tPurpose(item.purpose)}</p>)}
+                                        {item.isManual && ( <React.Fragment><InputField label={t('purpose')} value={item.purpose} onChange={e => onUpdate('purpose', e.target.value)} list=&quot;purposes-list&quot; /><datalist id=&quot;purposes-list&quot;>{uniquePurposes.map(opt => <option key={opt} value={tPurpose(opt)} />)}</datalist></React.Fragment> )}
+                                    </div>
+                                    <div className=&quot;space-y-3&quot;>
+                                        <div>
+                                            <label className=&quot;block text-sm font-medium text-slate-600 mb-1&quot;>{t('vialAmount')}</label>
+                                            {item.amountInVialMg.map((mg, i) => (<input key={i} type=&quot;number&quot; value={mg} min=&quot;0&quot; step=&quot;0.1&quot; onChange={e => handleNumericArrayChange('amountInVialMg', e.target.value, i)} className=&quot;w-full px-3 py-2 mb-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm&quot; />))}
+                                            {item.isManual && item.amountInVialMg.length < 2 && (<button onClick={addBlendComponent} className=&quot;text-xs text-cyan-600 hover:text-cyan-800&quot;>+ Add component for blend</button>)}
+                                        </div>
+                                        <InputField label={t('bacWater')} type=&quot;number&quot; value={item.chosenBacWaterMl} min=&quot;0.1&quot; step=&quot;0.1&quot; onChange={e => onUpdate('chosenBacWaterMl', e.target.value)} />
+                                    </div>
+                                    <div className=&quot;space-y-3&quot;>
+                                        <div>
+                                            <label className=&quot;block text-sm font-medium text-slate-600 mb-1&quot;>{t('dose')}</label>
+                                            {item.chosenDose.map((dose, i) => (<div key={i} className=&quot;flex items-center gap-2 mb-2&quot;><input type=&quot;number&quot; value={dose} min=&quot;0&quot; onChange={e => handleNumericArrayChange('chosenDose', e.target.value, i)} className=&quot;w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm&quot; /></div>))}
+                                        </div>
+                                        <select value={item.chosenDoseUnit} onChange={e => onUpdate('chosenDoseUnit', e.target.value)} className=&quot;w-full px-3 py-2 bg-white border border-slate-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:text-sm&quot;><option value=&quot;mcg&quot;>mcg</option><option value=&quot;mg&quot;>mg</option></select>
+                                        <div className=&quot;p-2 bg-cyan-50 border-l-4 border-cyan-500 text-cyan-800 rounded&quot;><p className=&quot;font-semibold text-sm&quot;>{t('units')}: <span className=&quot;text-base font-bold&quot;>{calculated.units.join(' / ')} U</span></p><p className=&quot;text-xs&quot;>({calculated.volumeMl.join(' / ')} mL)</p></div>
+                                    </div>
+                                    <div className=&quot;space-y-3&quot;>
+                                        <InputField label={t('timing')} value={item.timing} onChange={e => onUpdate('timing', e.target.value)} list=&quot;timings-list&quot; /><datalist id=&quot;timings-list&quot;>{uniqueTimings.map(opt => <option key={opt} value={opt} />)}</datalist>
+                                        <InputField label={t('frequency')} value={item.frequency} onChange={e => onUpdate('frequency', e.target.value)} list=&quot;frequencies-list&quot; /><datalist id=&quot;frequencies-list&quot;>{uniqueFrequencies.map(opt => <option key={opt} value={opt} />)}</datalist>
+                                        <InputField label={t('duration')} value={item.duration} onChange={e => onUpdate('duration', e.target.value)} list=&quot;durations-list&quot; /><datalist id=&quot;durations-list&quot;>{uniqueDurations.map(opt => <option key={opt} value={opt} />)}</datalist>
+                                    </div>
+                                </div>
+                                <div className=&quot;flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200&quot;><button onClick={onCancel} className=&quot;px-4 py-2 text-sm font-semibold bg-slate-200 text-slate-700 rounded-md hover:bg-slate-300 transition-colors&quot;>{t('cancel')}</button><button onClick={onSave} className=&quot;px-4 py-2 text-sm font-semibold bg-cyan-600 text-white rounded-md hover:bg-cyan-700 transition-colors shadow-sm&quot;>{t('addToProtocol')}</button></div>
+                            </div>
+                        );
+                    };
+
+                    const ProtocolTable = ({ protocolItems, t, tPurpose, onRemove, onUpdate, isPdf = false }) => (
+                         <div className=&quot;overflow-x-auto&quot;><table className=&quot;w-full text-sm text-left text-slate-600&quot;><thead className=&quot;text-xs text-slate-700 uppercase bg-slate-100&quot;><tr><th scope=&quot;col&quot; className=&quot;px-4 py-3&quot;>{t('name')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3&quot;>{t('purpose')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3 text-center&quot;>{t('vialAmount')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3 text-center&quot;>{t('bacWater')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3 text-center&quot;>{t('dose')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3 text-center&quot;>{t('units')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3&quot;>{t('timing')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3&quot;>{t('frequency')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3&quot;>{t('duration')}</th><th scope=&quot;col&quot; className=&quot;px-4 py-3 text-center&quot;>{t('actions')}</th></tr></thead><tbody>{protocolItems.map((item) => item.type === 'note' ? <NoteRow key={item.uniqueId} item={item} onRemove={onRemove} onUpdate={onUpdate} t={t} isPdf={isPdf} /> : <PeptideRow key={item.uniqueId} item={item} onRemove={onRemove} t={t} tPurpose={tPurpose} />)}</tbody></table></div>
+                    );
+
+                    const PeptideRow = ({ item, onRemove, t, tPurpose }) => {
+                        const calculated = computeUnits(item.amountInVialMg, item.chosenBacWaterMl, item.chosenDose, item.chosenDoseUnit);
+                        return (<tr className=&quot;bg-white border-b hover:bg-slate-50&quot;><td className=&quot;px-4 py-4 font-semibold text-slate-900&quot;>{item.name}</td><td className=&quot;px-4 py-4&quot;>{tPurpose(item.purpose)}</td><td className=&quot;px-4 py-4 text-center&quot;>{item.amountInVialMg.join(' / ')} mg</td><td className=&quot;px-4 py-4 text-center&quot;>{item.chosenBacWaterMl} mL</td><td className=&quot;px-4 py-4 text-center&quot;>{item.chosenDose.join(' / ')} {item.chosenDoseUnit}</td><td className=&quot;px-4 py-4 text-center font-bold text-cyan-700&quot;>{calculated.units.join(' / ')} U</td><td className=&quot;px-4 py-4&quot;>{item.timing}</td><td className=&quot;px-4 py-4&quot;>{item.frequency}</td><td className=&quot;px-4 py-4&quot;>{item.duration}</td><td className=&quot;px-4 py-4 text-center&quot;><button onClick={() => onRemove(item.uniqueId)} className=&quot;p-1 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors&quot; title={t('remove')}><X className=&quot;w-5 h-5&quot; /></button></td></tr>);
+                    };
+
+                    const NoteRow = ({ item, onRemove, onUpdate, t, isPdf }) => (<tr className=&quot;bg-slate-50 border-b&quot;><td colSpan=&quot;9&quot; className=&quot;px-4 py-2&quot;>{isPdf ? (<p className=&quot;p-2 text-sm text-slate-700 whitespace-pre-wrap&quot;>{item.content || t('notePlaceholder')}</p>) : (<textarea value={item.content} onChange={(e) => onUpdate(item.uniqueId, e.target.value)} placeholder={t('notePlaceholder')} className=&quot;w-full p-2 text-sm bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-500&quot; rows=&quot;2&quot;></textarea>)}</td><td className=&quot;px-4 py-4 text-center align-top&quot;><button onClick={() => onRemove(item.uniqueId)} className=&quot;p-1 text-slate-400 hover:text-red-600 rounded-full hover:bg-red-100 transition-colors&quot; title={t('remove')}><X className=&quot;w-5 h-5&quot; /></button></td></tr>);
+                    
+                    const PDFPreviewLayout = ({ language, protocolItems, clientInfo, t, tPurpose }) => (
+                        <div className=&quot;pdf-preview-container p-10&quot;>
+                            <header className=&quot;pdf-header&quot;>
+                                <div className=&quot;pdf-logo-container&quot;><img src={LOGO_BASE64} alt=&quot;Logo&quot; className=&quot;pdf-logo&quot; /><div className=&quot;pdf-clinic-info&quot;><h1>Cabo Health</h1><p>www.cabohealth.org</p></div></div>
+                                <div className=&quot;pdf-client-info&quot;>
+                                    {clientInfo.name && <p><span>{t('clientName')}:</span> {clientInfo.name}</p>}
+                                    {clientInfo.date && <p><span>{t('protocolDate')}:</span> {clientInfo.date}</p>}
+                                    {clientInfo.weight && <p><span>{t('clientWeight')}:</span> {clientInfo.weight} kg</p>}
+                                    {clientInfo.email && <p><span>{t('clientEmail')}:</span> {clientInfo.email}</p>}
+                                </div>
+                            </header>
+                            <main>
+                                <h2 style={{fontSize: '18px', fontWeight: 'bold', color: '#1a2a4c', marginBottom: '1rem', textAlign: 'center'}}>{language === 'es' ? 'Protocolo de Péptidos Sugerido' : 'Suggested Peptide Protocol'}</h2>
+                                <table className=&quot;pdf-table&quot;>
+                                    <thead><tr><th>{t('name')}</th><th>{t('purpose')}</th><th className=&quot;text-center&quot;>{t('vialAmount')}</th><th className=&quot;text-center&quot;>{t('bacWater')}</th><th className=&quot;text-center&quot;>{t('dose')}</th><th className=&quot;text-center&quot;>{t('units')}</th><th>{t('timing')}</th><th>{t('frequency')}</th><th>{t('duration')}</th></tr></thead>
+                                    <tbody>
+                                        {protocolItems.map((item) => {
+                                            if (item.type === 'note') {
+                                                return (<tr key={item.uniqueId} className=&quot;pdf-note-row&quot;><td colSpan=&quot;9&quot;><p className=&quot;pdf-note-content&quot;><span className=&quot;font-bold&quot;>{t('notes')}:</span> {item.content || '...'}</p></td></tr>);
+                                            }
+                                            const calculated = computeUnits(item.amountInVialMg, item.chosenBacWaterMl, item.chosenDose, item.chosenDoseUnit);
+                                            return (<tr key={item.uniqueId}><td className=&quot;font-bold&quot;>{item.name}</td><td>{tPurpose(item.purpose)}</td><td className=&quot;text-center&quot;>{item.amountInVialMg.join(' / ')} mg</td><td className=&quot;text-center&quot;>{item.chosenBacWaterMl} mL</td><td className=&quot;text-center&quot;>{item.chosenDose.join(' / ')} {item.chosenDoseUnit}</td><td className=&quot;text-center font-bold text-cyan-700&quot;>{calculated.units.join(' / ')} U</td><td>{item.timing}</td><td>{item.frequency}</td><td>{item.duration}</td></tr>);
+                                        })}
+                                    </tbody>
+                                </table>
+                            </main>
+                            <footer className=&quot;pdf-footer&quot;><p>Cabo Health | www.cabohealth.org | Instagram: @cabo_health</p></footer>
+                        </div>
+                    );
+
+                    ReactDOM.render(<App />, document.getElementById('root'));
+                </script>
+
+                <!-- 4. Script de Comunicación para la Altura -->
+                <script>
+                    const resizeObserver = new ResizeObserver(() => {
+                        window.parent.postMessage({ type: 'resize', height: document.body.scrollHeight }, '*');
+                    });
+                    resizeObserver.observe(document.body);
+                </script>
+            </body>
+            </html>
+        "
+        style="width: 100%; border: none; min-height: 1500px;" 
+        scrolling="no"
+        title="Constructor de Protocolos de Péptidos">
+    </iframe>
+</div>
+
+<script>
+    const iframe = document.getElementById('peptide-protocol-iframe');
+    window.addEventListener('message', function(event) {
+        if (event.data.type === 'resize' && event.data.height) {
+            iframe.style.height = event.data.height + 'px';
+        }
+    });
+</script>
+<!-- FIN: Contenedor y Script de Redimensión Automática -->
+
